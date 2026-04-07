@@ -157,7 +157,7 @@ function renderDialog(c){
     </div>`;
   renderTab(c);
 }
-function setTab(t){activeTab=t;const c=data.clients.find(x=>x.id===editingId);renderTab(c)}
+function setTab(t){activeTab=t;const c=data.clients.find(x=>x.id===editingId);renderDialog(c)}
 
 function renderTab(c){
   const t=document.getElementById("tabContent");
