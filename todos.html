@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>The Chowk - Todo List</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--warn:#c0392b;--border:#e3e0d8}
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink)}
+header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+header h1{font-size:18px;margin:0;flex:1}
+header a{color:var(--accent);text-decoration:none;font-size:14px;font-weight:500}
+button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:14px}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
+button.mini{padding:2px 8px;font-size:11px}
+.board{display:flex;gap:12px;padding:16px;overflow-x:auto;min-height:calc(100vh - 60px)}
+.col{background:#efece4;border-radius:10px;padding:10px;min-width:240px;width:240px;flex-shrink:0;display:flex;flex-direction:column}
+.col h3{margin:4px 6px 10px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#555;display:flex;justify-content:space-between}
+.col h3 span{background:#fff;border-radius:10px;padding:1px 8px;font-size:11px;color:#666}
+.add{display:flex;gap:6px;margin-bottom:8px}
+.add input{flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px}
+.todo{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px;display:flex;gap:8px;align-items:flex-start}
+.todo.done{opacity:.5}
+.todo.done .text{text-decoration:line-through}
+.todo input[type=checkbox]{margin-top:2px}
+.todo .text{flex:1;word-break:break-word}
+.todo .due{font-size:10px;color:var(--muted);display:block;margin-top:2px}
+.todo .due.overdue{color:var(--warn);font-weight:600}
+.todo .x{background:transparent;color:#aaa;border:0;cursor:pointer;padding:0 2px;font-size:14px}
+.todo .x:hover{color:var(--warn)}
+</style>
+</head>
+<body>
+<header>
+<h1>✅ The Chowk - Todo List</h1>
+<a href="/">← Sales Tool</a>
+</header>
+
+<div class="board" id="board"></div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPA_URL="https://lvcioeljvwahvsulgilt.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2Y2lvZWxqdndhaHZzdWxnaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDU4MjIsImV4cCI6MjA5MTEyMTgyMn0.RnOOCg3x-ltDU3H-yME5g8Vd6XCHILXqqFjyWDD1AJs";
+const sb=createClient(SUPA_URL,SUPA_KEY);
+
+const PEOPLE=["Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli"];
+let todos=[];
+const dirty=new Set(),deleted=new Set();
+let saveTimer=null;
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=()=>new Date().toISOString().slice(0,10);
+const fmtDate=d=>{if(!d)return "";const [y,m,da]=d.split("-");return da&&m&&y?`${da} ${m} ${y}`:d};
+const esc=s=>(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+async function loadAll(){
+  const {data:rows,error}=await sb.from("todos").select("data").order("updated_at",{ascending:false});
+  if(error){alert("Load failed: "+error.message);return}
+  todos=(rows||[]).map(r=>r.data);
+  render();
+}
+async function flush(){
+  const up=todos.filter(t=>dirty.has(t.id)).map(t=>({id:t.id,data:t}));
+  dirty.clear();
+  if(up.length)await sb.from("todos").upsert(up);
+  if(deleted.size){await sb.from("todos").delete().in("id",[...deleted]);deleted.clear()}
+}
+function save(id){
+  if(id)dirty.add(id);
+  render();
+  clearTimeout(saveTimer);saveTimer=setTimeout(flush,400);
+}
+window.addEventListener("beforeunload",flush);
+
+function render(){
+  const board=document.getElementById("board");board.innerHTML="";
+  PEOPLE.forEach(p=>{
+    const list=todos.filter(t=>t.assignee===p).sort((a,b)=>(a.done?1:0)-(b.done?1:0)||(a.created||"").localeCompare(b.created||""));
+    const open=list.filter(t=>!t.done).length;
+    const col=document.createElement("div");col.className="col";
+    col.innerHTML=`<h3>${p}<span>${open}</span></h3>
+      <div class="add">
+        <input placeholder="New todo…" id="in_${p}"/>
+        <input type="date" id="due_${p}" style="width:120px"/>
+      </div>
+      <div id="list_${p}"></div>`;
+    board.appendChild(col);
+    const listEl=col.querySelector(`#list_${p}`);
+    list.forEach(t=>{
+      const d=document.createElement("div");
+      d.className="todo"+(t.done?" done":"");
+      const overdue=t.due&&t.due<today()&&!t.done;
+      d.innerHTML=`<input type="checkbox" ${t.done?"checked":""}/>
+        <div class="text">${esc(t.text)}${t.due?`<span class="due ${overdue?"overdue":""}">📅 ${fmtDate(t.due)}</span>`:""}</div>
+        <button class="x" title="Delete">×</button>`;
+      d.querySelector('input[type=checkbox]').onchange=e=>{t.done=e.target.checked;save(t.id)};
+      d.querySelector('.x').onclick=()=>{deleted.add(t.id);todos=todos.filter(x=>x.id!==t.id);save();flush()};
+      listEl.appendChild(d);
+    });
+    const input=col.querySelector(`#in_${p}`);
+    const dueInput=col.querySelector(`#due_${p}`);
+    input.onkeydown=e=>{
+      if(e.key==="Enter"&&input.value.trim()){
+        const t={id:uid(),assignee:p,text:input.value.trim(),done:false,due:dueInput.value||"",created:new Date().toISOString()};
+        todos.push(t);save(t.id);
+      }
+    };
+  });
+}
+
+loadAll();
+</script>
+</body>
+</html>
