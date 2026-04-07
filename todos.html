@@ -54,6 +54,9 @@ button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 .summary h4{margin:10px 0 4px;font-size:12px;text-transform:uppercase;color:#888}
 .bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;margin-top:6px}
 .bar>span{display:block;height:100%;background:var(--ok)}
+#undoBar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;display:none;align-items:center;gap:12px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+#undoBar.show{display:flex}
+#undoBar button{background:var(--accent);color:#fff;border:0;padding:4px 12px;border-radius:4px;font-size:12px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -67,6 +70,7 @@ button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 </header>
 
 <div id="main"></div>
+<div id="undoBar"><span id="undoMsg"></span><button id="undoBtn">Undo</button></div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -220,7 +224,9 @@ function todoEl(t){
     save(t.id);
   };
   d.querySelector('.x').onclick=()=>{
+    const snapshot={...t};
     deleted.add(t.id);todos=todos.filter(x=>x.id!==t.id);save();flush();
+    showUndo(snapshot);
   };
   return d;
 }
@@ -265,6 +271,24 @@ function renderWeek(root){
   div.appendChild(grid);
   root.appendChild(div);
   document.querySelectorAll("#viewToggle button").forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll("#viewToggle button").forEach(x=>x.classList.toggle("active",x===b));render()});
+}
+
+let undoTimer=null;
+function showUndo(t){
+  const bar=document.getElementById("undoBar");
+  document.getElementById("undoMsg").textContent=`Deleted: "${(t.text||"").slice(0,40)}"`;
+  bar.classList.add("show");
+  clearTimeout(undoTimer);
+  undoTimer=setTimeout(()=>bar.classList.remove("show"),8000);
+  document.getElementById("undoBtn").onclick=async()=>{
+    deleted.delete(t.id);
+    todos.push(t);
+    dirty.add(t.id);
+    await flush();
+    render();
+    bar.classList.remove("show");
+    clearTimeout(undoTimer);
+  };
 }
 
 loadAll();
