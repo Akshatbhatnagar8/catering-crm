@@ -58,14 +58,43 @@ textarea{min-height:60px;resize:vertical}
 
 <div class="modal" id="modal"><div class="dialog" id="dialogBody"></div></div>
 
-<script>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPA_URL="https://lvcioeljvwahvsulgilt.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2Y2lvZWxqdndhaHZzdWxnaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDU4MjIsImV4cCI6MjA5MTEyMTgyMn0.RnOOCg3x-ltDU3H-yME5g8Vd6XCHILXqqFjyWDD1AJs";
+const sb=createClient(SUPA_URL,SUPA_KEY);
+
 const STAGES=["Lead from Agent","Tasting Scheduled","Tasting Completed","Sample Menu Sent","Menu Finalization","Awaiting Confirmation","Confirmed","Lost"];
 const SLA={"Lead from Agent":2,"Tasting Scheduled":1,"Tasting Completed":2,"Sample Menu Sent":3,"Menu Finalization":3,"Awaiting Confirmation":2,"Confirmed":999,"Lost":999};
 
-let data=JSON.parse(localStorage.getItem("crm")||'{"clients":[]}');
+let data={clients:[]};
 let editingId=null,activeTab="details";
+let saveTimer=null;
+const dirty=new Set();
+const deleted=new Set();
 
-function save(){localStorage.setItem("crm",JSON.stringify(data));render()}
+async function loadAll(){
+  const {data:rows,error}=await sb.from("clients").select("data").order("updated_at",{ascending:false});
+  if(error){alert("Load failed: "+error.message);return}
+  data.clients=(rows||[]).map(r=>r.data);
+  render();
+}
+
+async function flush(){
+  const toUpsert=data.clients.filter(c=>dirty.has(c.id)).map(c=>({id:c.id,data:c}));
+  dirty.clear();
+  if(toUpsert.length){await sb.from("clients").upsert(toUpsert)}
+  if(deleted.size){await sb.from("clients").delete().in("id",[...deleted]);deleted.clear()}
+}
+
+function save(id){
+  if(id)dirty.add(id);
+  else data.clients.forEach(c=>dirty.add(c.id));
+  render();
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(flush,400);
+}
+window.addEventListener("beforeunload",flush);
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function today(){return new Date().toISOString().slice(0,10)}
 function daysSince(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d))/86400000)}
@@ -103,11 +132,12 @@ function render(){
 function openClient(id){
   editingId=id||null;activeTab="details";
   const c=id?data.clients.find(x=>x.id===id):{id:uid(),name:"",stage:STAGES[0],stageSince:today(),agent:"",phone:"",email:"",eventDate:"",headcount:"",venue:"",dietary:"",menu:"",tastingNotes:"",reminder:"",reminderNote:"",log:[]};
-  if(!id){data.clients.push(c);editingId=c.id}
+  if(!id){data.clients.push(c);editingId=c.id;dirty.add(c.id)}
   renderDialog(c);
   document.getElementById("modal").classList.add("show");
 }
-function closeModal(){document.getElementById("modal").classList.remove("show");save()}
+function closeModal(){document.getElementById("modal").classList.remove("show");flush();render()}
+function deleteClient(id){data.clients=data.clients.filter(x=>x.id!==id);deleted.add(id);dirty.delete(id);closeModal()}
 
 function renderDialog(c){
   const body=document.getElementById("dialogBody");
@@ -121,7 +151,7 @@ function renderDialog(c){
     </div>
     <div id="tabContent"></div>
     <div class="actions">
-      <button class="danger" onclick="if(confirm('Delete this client?')){data.clients=data.clients.filter(x=>x.id!=='${c.id}');closeModal()}">Delete</button>
+      <button class="danger" onclick="if(confirm('Delete this client?'))deleteClient('${c.id}')">Delete</button>
       <button class="ghost" onclick="closeModal()">Close</button>
     </div>`;
   renderTab(c);
@@ -130,7 +160,7 @@ function setTab(t){activeTab=t;const c=data.clients.find(x=>x.id===editingId);re
 
 function renderTab(c){
   const t=document.getElementById("tabContent");
-  const upd=(f,v)=>{c[f]=v;if(f==='stage'){c.stageSince=today();c.log=c.log||[];c.log.unshift({when:new Date().toLocaleString(),text:"Moved to "+v})}save();if(f==='name')document.querySelector('#dialogBody h2').textContent=v||"New Client"};
+  const upd=(f,v)=>{c[f]=v;if(f==='stage'){c.stageSince=today();c.log=c.log||[];c.log.unshift({when:new Date().toLocaleString(),text:"Moved to "+v})}save(c.id);if(f==='name')document.querySelector('#dialogBody h2').textContent=v||"New Client"};
   if(activeTab==='details'){
     t.innerHTML=`
       <label>Client name</label><input id="f_name" value="${c.name||''}"/>
@@ -154,12 +184,12 @@ function renderTab(c){
     t.innerHTML=`<label>Next follow-up date</label><input type="date" id="f_reminder" value="${c.reminder||''}"/>
       <label>Reminder note</label><textarea id="f_reminderNote" placeholder="e.g. Call to confirm final menu and headcount">${c.reminderNote||''}</textarea>
       <p style="font-size:12px;color:#888">SLA for "${c.stage}" is ${SLA[c.stage]} days. Currently ${daysSince(c.stageSince)} days in stage.</p>
-      <button class="ghost" onclick="(()=>{const c=data.clients.find(x=>x.id==='${c.id}');c.reminder='';c.reminderNote='';save();renderTab(c)})()">Clear reminder</button>`;
+      <button class="ghost" onclick="(()=>{const c=data.clients.find(x=>x.id==='${c.id}');c.reminder='';c.reminderNote='';save(c.id);renderTab(c)})()">Clear reminder</button>`;
     ['reminder','reminderNote'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
   }
   else if(activeTab==='log'){
     t.innerHTML=`<label>Add note</label><div class="row"><div style="flex:3"><input id="f_newlog" placeholder="Called client, sent menu PDF..."/></div>
-      <div style="flex:1"><button onclick="(()=>{const v=document.getElementById('f_newlog').value;if(!v)return;const c=data.clients.find(x=>x.id==='${c.id}');c.log=c.log||[];c.log.unshift({when:new Date().toLocaleString(),text:v});save();renderTab(c)})()">Add</button></div></div>
+      <div style="flex:1"><button onclick="(()=>{const v=document.getElementById('f_newlog').value;if(!v)return;const c=data.clients.find(x=>x.id==='${c.id}');c.log=c.log||[];c.log.unshift({when:new Date().toLocaleString(),text:v});save(c.id);renderTab(c)})()">Add</button></div></div>
       <div class="timeline" style="margin-top:10px">${(c.log||[]).map(e=>`<div class="entry"><div class="when">${e.when}</div>${e.text}</div>`).join('')||'<p style="color:#999;font-size:12px">No activity yet.</p>'}</div>`;
   }
 }
@@ -170,11 +200,14 @@ function exportData(){
 }
 function importData(e){
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=()=>{try{data=JSON.parse(r.result);save()}catch(err){alert("Invalid file")}};r.readAsText(f);
+  const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);data.clients=j.clients||[];save()}catch(err){alert("Invalid file")}};r.readAsText(f);
 }
 
+Object.assign(window,{openClient,closeModal,setTab,exportData,importData,deleteClient,data});
+
+loadAll();
 // seed sample on first run
-if(!data.clients.length){
+if(false){
   data.clients=[
     {id:uid(),name:"Sharma Wedding",stage:"Awaiting Confirmation",stageSince:"2026-04-01",agent:"Ravi",phone:"98xxx",email:"",eventDate:"2026-05-12",headcount:"250",venue:"Taj Banquet",dietary:"30 Jain",menu:"North Indian veg buffet",tastingNotes:"Loved paneer tikka",reminder:"2026-04-07",reminderNote:"Confirm advance payment",log:[{when:"Apr 1",text:"Sample menu shared"}]},
     {id:uid(),name:"Acme Corp Offsite",stage:"Sample Menu Sent",stageSince:today(),agent:"Priya",eventDate:"2026-04-25",headcount:"80",venue:"",dietary:"",menu:"",tastingNotes:"",reminder:"",reminderNote:"",log:[]}
