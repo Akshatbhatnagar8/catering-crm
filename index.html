@@ -223,11 +223,17 @@ function renderTab(c){
     document.getElementById('f_tastingNotes').oninput=e=>upd('tastingNotes',e.target.value);
   }
   else if(activeTab==='reminder'){
+    const PEOPLE2=["","Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli"];
     t.innerHTML=`<label>Next follow-up date</label><input type="date" id="f_reminder" value="${c.reminder||''}"/>
+      <label>Assigned to</label><select id="f_reminderAssignee">${PEOPLE2.map(p=>`<option value="${p}" ${p===(c.reminderAssignee||'')?'selected':''}>${p||'— unassigned —'}</option>`).join('')}</select>
       <label>Reminder note</label><textarea id="f_reminderNote" placeholder="e.g. Call to confirm final menu and headcount">${c.reminderNote||''}</textarea>
-      <p style="font-size:12px;color:#888">SLA for "${c.stage}" is ${SLA[c.stage]} days. Currently ${daysSince(c.stageSince)} days in stage.</p>
-      <button class="ghost" onclick="(()=>{const c=data.clients.find(x=>x.id==='${c.id}');c.reminder='';c.reminderNote='';save(c.id);renderTab(c)})()">Clear reminder</button>`;
-    ['reminder','reminderNote'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
+      <p style="font-size:12px;color:#888">SLA for "${c.stage}" is ${SLA[c.stage]} days. Currently ${daysSince(c.stageSince)} days in stage. ${c.reminderAssignee?`<br>✓ This reminder auto-appears in <b>${c.reminderAssignee}</b>'s todo list.`:`<br>ℹ Assign to someone to push it to their todo list.`}</p>
+      <button class="ghost" onclick="clearReminder('${c.id}')">Clear reminder</button>`;
+    ['reminder','reminderNote','reminderAssignee'].forEach(f=>{
+      const el=document.getElementById('f_'+f);
+      const handler=e=>{upd(f,e.target.value);syncReminderTodo(c)};
+      el.oninput=handler;el.onchange=handler;
+    });
   }
   else if(activeTab==='files'){
     c.files=c.files||[];
@@ -275,6 +281,28 @@ function exportData(){
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="catering-crm-"+today()+".json";a.click();
 }
+async function syncReminderTodo(c){
+  const todoId="rem-"+c.id;
+  if(!c.reminderAssignee||!c.reminder){
+    await sb.from("todos").delete().eq("id",todoId);
+    return;
+  }
+  const todo={
+    id:todoId,assignee:c.reminderAssignee,
+    text:(c.reminderNote||`Follow up with ${c.name||"client"}`),
+    done:false,priority:"high",category:"Sales",
+    due:c.reminder,bigRock:false,recurring:"",
+    clientId:c.id,created:new Date().toISOString()
+  };
+  await sb.from("todos").upsert({id:todoId,data:todo});
+}
+async function clearReminder(clientId){
+  const c=data.clients.find(x=>x.id===clientId);if(!c)return;
+  c.reminder="";c.reminderNote="";c.reminderAssignee="";
+  await sb.from("todos").delete().eq("id","rem-"+clientId);
+  save(clientId);renderTab(c);
+}
+
 async function createClientTodo(clientId){
   const g=id=>document.getElementById(id);
   const text=g('td_text').value.trim();
@@ -325,7 +353,7 @@ function importData(e){
   const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);data.clients=j.clients||[];save()}catch(err){alert("Invalid file")}};r.readAsText(f);
 }
 
-Object.assign(window,{openClient,closeModal,setTab,exportData,importData,deleteClient,uploadFile,delFile,addEvent,delEvent,createClientTodo,data});
+Object.assign(window,{openClient,closeModal,setTab,exportData,importData,deleteClient,uploadFile,delFile,addEvent,delEvent,createClientTodo,syncReminderTodo,clearReminder,data});
 
 loadAll();
 // seed sample on first run
