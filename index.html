@@ -65,6 +65,23 @@ const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb=createClient(SUPA_URL,SUPA_KEY);
 
 const STAGES=["Lead from Agent","Tasting Scheduled","Tasting Completed","Sample Menu Sent","Menu Finalization","Awaiting Confirmation","Confirmed","Lost"];
+const EVENT_TYPES=["Haldi","Mehendi","After Party","Wedding","Sadhya Dinner","High Tea","Breakfast","Lunch","Other"];
+function migrateClient(c){
+  if(!c.events)c.events=[];
+  if(c.eventDate&&!c.events.length){
+    c.events.push({id:uid(),type:"Other",date:c.eventDate,headcount:c.headcount||"",venue:c.venue||"",menu:c.menu||"",dietary:c.dietary||"",notes:""});
+  }
+  return c;
+}
+function eventSummary(c){
+  const evs=(c.events||[]).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  if(!evs.length)return "";
+  const dates=evs.filter(e=>e.date).map(e=>e.date);
+  const first=dates[0],last=dates[dates.length-1];
+  const range=first?(first===last?first:first+" → "+last):"";
+  const types=evs.map(e=>e.type).filter(Boolean).join(", ");
+  return {range,types,count:evs.length};
+}
 const SLA={"Lead from Agent":2,"Tasting Scheduled":1,"Tasting Completed":2,"Sample Menu Sent":3,"Menu Finalization":3,"Awaiting Confirmation":2,"Confirmed":999,"Lost":999};
 
 let data={clients:[]};
@@ -76,7 +93,7 @@ const deleted=new Set();
 async function loadAll(){
   const {data:rows,error}=await sb.from("clients").select("data").order("updated_at",{ascending:false});
   if(error){alert("Load failed: "+error.message);return}
-  data.clients=(rows||[]).map(r=>r.data);
+  data.clients=(rows||[]).map(r=>migrateClient(r.data));
   render();
 }
 
@@ -111,8 +128,11 @@ function render(){
       const nextDue=c.reminder&&c.reminder<=today();
       const cls="card"+(overdue?" stale":"")+(nextDue?" due":"");
       const div=document.createElement("div");div.className=cls;
+      const s=eventSummary(c);
+      const totalPax=(c.events||[]).reduce((a,e)=>a+(parseInt(e.headcount)||0),0);
       div.innerHTML=`<div class="name">${c.name||"(no name)"}</div>
-        <div style="font-size:11px;color:#666">${c.eventDate?"📅 "+c.eventDate:""} ${c.headcount?"• "+c.headcount+" pax":""}</div>
+        ${s?`<div style="font-size:11px;color:#666">📅 ${s.range} ${totalPax?"• "+totalPax+" pax":""}</div>
+        <div style="font-size:11px;color:#888;margin-top:2px">${s.count} event${s.count>1?"s":""}: ${s.types}</div>`:""}
         <div class="meta"><span>${c.agent||"—"}</span><span>${days}d in stage</span></div>
         ${c.reminder?`<div style="font-size:11px;margin-top:4px;color:${nextDue?'#c0392b':'#888'}">⏰ ${c.reminder}</div>`:""}`;
       div.onclick=()=>openClient(c.id);
@@ -131,7 +151,7 @@ function render(){
 
 function openClient(id){
   editingId=id||null;activeTab="details";
-  const c=id?data.clients.find(x=>x.id===id):{id:uid(),name:"",stage:STAGES[0],stageSince:today(),agent:"",phone:"",email:"",eventDate:"",headcount:"",venue:"",dietary:"",menu:"",tastingNotes:"",reminder:"",reminderNote:"",log:[]};
+  const c=id?data.clients.find(x=>x.id===id):migrateClient({id:uid(),name:"",stage:STAGES[0],stageSince:today(),agent:"",phone:"",email:"",events:[],tastingNotes:"",reminder:"",reminderNote:"",log:[],files:[]});
   if(!id){data.clients.push(c);editingId=c.id;dirty.add(c.id)}
   renderDialog(c);
   document.getElementById("modal").classList.add("show");
@@ -145,7 +165,8 @@ function renderDialog(c){
     <h2>${c.name||"New Client"}</h2>
     <div class="tabs">
       <div class="tab ${activeTab==='details'?'active':''}" onclick="setTab('details')">Details</div>
-      <div class="tab ${activeTab==='menu'?'active':''}" onclick="setTab('menu')">Menu & Tasting</div>
+      <div class="tab ${activeTab==='events'?'active':''}" onclick="setTab('events')">Events (${(c.events||[]).length})</div>
+      <div class="tab ${activeTab==='menu'?'active':''}" onclick="setTab('menu')">Tasting</div>
       <div class="tab ${activeTab==='reminder'?'active':''}" onclick="setTab('reminder')">Reminder</div>
       <div class="tab ${activeTab==='files'?'active':''}" onclick="setTab('files')">Files (${(c.files||[]).length})</div>
       <div class="tab ${activeTab==='log'?'active':''}" onclick="setTab('log')">Activity (${(c.log||[]).length})</div>
@@ -168,18 +189,35 @@ function renderTab(c){
       <div class="row"><div><label>Phone</label><input id="f_phone" value="${c.phone||''}"/></div>
       <div><label>Email</label><input id="f_email" value="${c.email||''}"/></div></div>
       <label>Agent / Referrer</label><input id="f_agent" value="${c.agent||''}"/>
-      <label>Stage</label><select id="f_stage">${STAGES.map(s=>`<option ${s===c.stage?'selected':''}>${s}</option>`).join('')}</select>
-      <div class="row"><div><label>Event date</label><input type="date" id="f_eventDate" value="${c.eventDate||''}"/></div>
-      <div><label>Headcount</label><input id="f_headcount" value="${c.headcount||''}"/></div></div>
-      <label>Venue</label><input id="f_venue" value="${c.venue||''}"/>`;
-    ['name','phone','email','agent','eventDate','headcount','venue'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
+      <label>Stage</label><select id="f_stage">${STAGES.map(s=>`<option ${s===c.stage?'selected':''}>${s}</option>`).join('')}</select>`;
+    ['name','phone','email','agent'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
     document.getElementById('f_stage').onchange=e=>{upd('stage',e.target.value);renderTab(c)};
   }
+  else if(activeTab==='events'){
+    c.events=c.events||[];
+    const list=c.events.map((e,i)=>`
+      <div style="border:1px solid #e3e0d8;border-radius:8px;padding:10px;margin-bottom:10px;background:#fafaf7">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <select data-ev="${i}" data-f="type" style="flex:1">${EVENT_TYPES.map(et=>`<option ${et===e.type?'selected':''}>${et}</option>`).join('')}</select>
+          <input type="date" data-ev="${i}" data-f="date" value="${e.date||''}" style="flex:1"/>
+          <button class="danger" style="padding:4px 10px;font-size:12px" onclick="delEvent('${c.id}',${i})">×</button>
+        </div>
+        <div class="row"><div><label>Headcount</label><input data-ev="${i}" data-f="headcount" value="${e.headcount||''}"/></div>
+        <div><label>Venue</label><input data-ev="${i}" data-f="venue" value="${e.venue||''}"/></div></div>
+        <label>Dietary</label><input data-ev="${i}" data-f="dietary" value="${e.dietary||''}"/>
+        <label>Menu</label><textarea data-ev="${i}" data-f="menu">${e.menu||''}</textarea>
+        <label>Notes</label><textarea data-ev="${i}" data-f="notes">${e.notes||''}</textarea>
+      </div>`).join('')||'<p style="color:#999;font-size:12px">No events yet.</p>';
+    t.innerHTML=list+`<button onclick="addEvent('${c.id}')">+ Add event</button>`;
+    t.querySelectorAll('[data-ev]').forEach(el=>{
+      const i=+el.dataset.ev,f=el.dataset.f;
+      const handler=e=>{c.events[i][f]=e.target.value;save(c.id)};
+      el.oninput=handler;el.onchange=handler;
+    });
+  }
   else if(activeTab==='menu'){
-    t.innerHTML=`<label>Dietary requirements</label><textarea id="f_dietary">${c.dietary||''}</textarea>
-      <label>Finalized menu</label><textarea id="f_menu">${c.menu||''}</textarea>
-      <label>Tasting notes</label><textarea id="f_tastingNotes">${c.tastingNotes||''}</textarea>`;
-    ['dietary','menu','tastingNotes'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
+    t.innerHTML=`<label>Tasting notes (across all events)</label><textarea id="f_tastingNotes" style="min-height:120px">${c.tastingNotes||''}</textarea>`;
+    document.getElementById('f_tastingNotes').oninput=e=>upd('tastingNotes',e.target.value);
   }
   else if(activeTab==='reminder'){
     t.innerHTML=`<label>Next follow-up date</label><input type="date" id="f_reminder" value="${c.reminder||''}"/>
@@ -218,6 +256,17 @@ function exportData(){
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="catering-crm-"+today()+".json";a.click();
 }
+function addEvent(clientId){
+  const c=data.clients.find(x=>x.id===clientId);if(!c)return;
+  c.events=c.events||[];
+  c.events.push({id:uid(),type:"Wedding",date:"",headcount:"",venue:"",menu:"",dietary:"",notes:""});
+  save(clientId);renderDialog(c);
+}
+function delEvent(clientId,idx){
+  const c=data.clients.find(x=>x.id===clientId);if(!c||!c.events)return;
+  c.events.splice(idx,1);save(clientId);renderDialog(c);
+}
+
 async function uploadFile(clientId,file){
   if(!file)return;
   if(file.size>25*1024*1024){alert("Max 25 MB");return}
@@ -241,7 +290,7 @@ function importData(e){
   const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);data.clients=j.clients||[];save()}catch(err){alert("Invalid file")}};r.readAsText(f);
 }
 
-Object.assign(window,{openClient,closeModal,setTab,exportData,importData,deleteClient,uploadFile,delFile,data});
+Object.assign(window,{openClient,closeModal,setTab,exportData,importData,deleteClient,uploadFile,delFile,addEvent,delEvent,data});
 
 loadAll();
 // seed sample on first run
