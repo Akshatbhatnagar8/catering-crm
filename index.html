@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Catering CRM</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--warn:#c0392b;--ok:#2e7d32;--border:#e3e0d8}
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink)}
+header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+header h1{font-size:18px;margin:0;flex:1}
+button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:14px}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
+button.danger{background:var(--warn)}
+.board{display:flex;gap:12px;padding:16px;overflow-x:auto;min-height:calc(100vh - 60px)}
+.col{background:#efece4;border-radius:10px;padding:10px;min-width:260px;width:260px;flex-shrink:0}
+.col h3{margin:4px 6px 10px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#555;display:flex;justify-content:space-between}
+.col h3 span{background:#fff;border-radius:10px;padding:1px 8px;font-size:11px;color:#666}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;font-size:13px}
+.card:hover{border-color:var(--accent)}
+.card .name{font-weight:600;margin-bottom:4px}
+.card .meta{color:var(--muted);font-size:11px;display:flex;justify-content:space-between;margin-top:6px}
+.card.stale{border-left:4px solid var(--warn)}
+.card.due{border-left:4px solid #e6a700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50}
+.modal.show{display:flex}
+.dialog{background:#fff;border-radius:10px;width:560px;max-width:95vw;max-height:92vh;overflow-y:auto;padding:20px}
+.dialog h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:12px;color:#555;margin:8px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit}
+textarea{min-height:60px;resize:vertical}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin:14px 0 10px}
+.tab{padding:8px 14px;cursor:pointer;border-bottom:2px solid transparent;font-size:13px;color:#666}
+.tab.active{border-color:var(--accent);color:var(--accent);font-weight:600}
+.timeline{max-height:240px;overflow-y:auto}
+.entry{border-left:2px solid var(--border);padding:6px 10px;margin-left:6px;font-size:13px}
+.entry .when{color:var(--muted);font-size:11px}
+.alerts{background:#fff5e6;border:1px solid #f0c97d;padding:10px 14px;margin:10px 16px 0;border-radius:8px;font-size:13px}
+.alerts b{color:var(--warn)}
+.pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;background:#eee;color:#555;margin-left:4px}
+</style>
+</head>
+<body>
+<header>
+<h1>🍽️ Catering CRM</h1>
+<button onclick="openClient()">+ New Client</button>
+<button class="ghost" onclick="exportData()">Export</button>
+<button class="ghost" onclick="document.getElementById('imp').click()">Import</button>
+<input type="file" id="imp" style="display:none" accept=".json" onchange="importData(event)"/>
+</header>
+
+<div id="alertBox"></div>
+<div class="board" id="board"></div>
+
+<div class="modal" id="modal"><div class="dialog" id="dialogBody"></div></div>
+
+<script>
+const STAGES=["Lead from Agent","Tasting Scheduled","Tasting Completed","Sample Menu Sent","Menu Finalization","Awaiting Confirmation","Confirmed","Lost"];
+const SLA={"Lead from Agent":2,"Tasting Scheduled":1,"Tasting Completed":2,"Sample Menu Sent":3,"Menu Finalization":3,"Awaiting Confirmation":2,"Confirmed":999,"Lost":999};
+
+let data=JSON.parse(localStorage.getItem("crm")||'{"clients":[]}');
+let editingId=null,activeTab="details";
+
+function save(){localStorage.setItem("crm",JSON.stringify(data));render()}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function today(){return new Date().toISOString().slice(0,10)}
+function daysSince(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d))/86400000)}
+
+function render(){
+  const board=document.getElementById("board");board.innerHTML="";
+  STAGES.forEach(s=>{
+    const col=document.createElement("div");col.className="col";
+    const list=data.clients.filter(c=>c.stage===s);
+    col.innerHTML=`<h3>${s}<span>${list.length}</span></h3>`;
+    list.forEach(c=>{
+      const sla=SLA[s];const days=daysSince(c.stageSince);
+      const overdue=days>sla;
+      const nextDue=c.reminder&&c.reminder<=today();
+      const cls="card"+(overdue?" stale":"")+(nextDue?" due":"");
+      const div=document.createElement("div");div.className=cls;
+      div.innerHTML=`<div class="name">${c.name||"(no name)"}</div>
+        <div style="font-size:11px;color:#666">${c.eventDate?"📅 "+c.eventDate:""} ${c.headcount?"• "+c.headcount+" pax":""}</div>
+        <div class="meta"><span>${c.agent||"—"}</span><span>${days}d in stage</span></div>
+        ${c.reminder?`<div style="font-size:11px;margin-top:4px;color:${nextDue?'#c0392b':'#888'}">⏰ ${c.reminder}</div>`:""}`;
+      div.onclick=()=>openClient(c.id);
+      col.appendChild(div);
+    });
+    board.appendChild(col);
+  });
+  // alerts
+  const stale=data.clients.filter(c=>daysSince(c.stageSince)>SLA[c.stage]&&c.stage!=="Confirmed"&&c.stage!=="Lost");
+  const dueRem=data.clients.filter(c=>c.reminder&&c.reminder<=today());
+  const ab=document.getElementById("alertBox");
+  if(stale.length||dueRem.length){
+    ab.innerHTML=`<div class="alerts"><b>Attention:</b> ${dueRem.length} reminder(s) due today, ${stale.length} client(s) stale beyond stage SLA.</div>`;
+  } else ab.innerHTML="";
+}
+
+function openClient(id){
+  editingId=id||null;activeTab="details";
+  const c=id?data.clients.find(x=>x.id===id):{id:uid(),name:"",stage:STAGES[0],stageSince:today(),agent:"",phone:"",email:"",eventDate:"",headcount:"",venue:"",dietary:"",menu:"",tastingNotes:"",reminder:"",reminderNote:"",log:[]};
+  if(!id){data.clients.push(c);editingId=c.id}
+  renderDialog(c);
+  document.getElementById("modal").classList.add("show");
+}
+function closeModal(){document.getElementById("modal").classList.remove("show");save()}
+
+function renderDialog(c){
+  const body=document.getElementById("dialogBody");
+  body.innerHTML=`
+    <h2>${c.name||"New Client"}</h2>
+    <div class="tabs">
+      <div class="tab ${activeTab==='details'?'active':''}" onclick="setTab('details')">Details</div>
+      <div class="tab ${activeTab==='menu'?'active':''}" onclick="setTab('menu')">Menu & Tasting</div>
+      <div class="tab ${activeTab==='reminder'?'active':''}" onclick="setTab('reminder')">Reminder</div>
+      <div class="tab ${activeTab==='log'?'active':''}" onclick="setTab('log')">Activity (${(c.log||[]).length})</div>
+    </div>
+    <div id="tabContent"></div>
+    <div class="actions">
+      <button class="danger" onclick="if(confirm('Delete this client?')){data.clients=data.clients.filter(x=>x.id!=='${c.id}');closeModal()}">Delete</button>
+      <button class="ghost" onclick="closeModal()">Close</button>
+    </div>`;
+  renderTab(c);
+}
+function setTab(t){activeTab=t;const c=data.clients.find(x=>x.id===editingId);renderTab(c)}
+
+function renderTab(c){
+  const t=document.getElementById("tabContent");
+  const upd=(f,v)=>{c[f]=v;if(f==='stage'){c.stageSince=today();c.log=c.log||[];c.log.unshift({when:new Date().toLocaleString(),text:"Moved to "+v})}save();if(f==='name')document.querySelector('#dialogBody h2').textContent=v||"New Client"};
+  if(activeTab==='details'){
+    t.innerHTML=`
+      <label>Client name</label><input id="f_name" value="${c.name||''}"/>
+      <div class="row"><div><label>Phone</label><input id="f_phone" value="${c.phone||''}"/></div>
+      <div><label>Email</label><input id="f_email" value="${c.email||''}"/></div></div>
+      <label>Agent / Referrer</label><input id="f_agent" value="${c.agent||''}"/>
+      <label>Stage</label><select id="f_stage">${STAGES.map(s=>`<option ${s===c.stage?'selected':''}>${s}</option>`).join('')}</select>
+      <div class="row"><div><label>Event date</label><input type="date" id="f_eventDate" value="${c.eventDate||''}"/></div>
+      <div><label>Headcount</label><input id="f_headcount" value="${c.headcount||''}"/></div></div>
+      <label>Venue</label><input id="f_venue" value="${c.venue||''}"/>`;
+    ['name','phone','email','agent','eventDate','headcount','venue'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
+    document.getElementById('f_stage').onchange=e=>{upd('stage',e.target.value);renderTab(c)};
+  }
+  else if(activeTab==='menu'){
+    t.innerHTML=`<label>Dietary requirements</label><textarea id="f_dietary">${c.dietary||''}</textarea>
+      <label>Finalized menu</label><textarea id="f_menu">${c.menu||''}</textarea>
+      <label>Tasting notes</label><textarea id="f_tastingNotes">${c.tastingNotes||''}</textarea>`;
+    ['dietary','menu','tastingNotes'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
+  }
+  else if(activeTab==='reminder'){
+    t.innerHTML=`<label>Next follow-up date</label><input type="date" id="f_reminder" value="${c.reminder||''}"/>
+      <label>Reminder note</label><textarea id="f_reminderNote" placeholder="e.g. Call to confirm final menu and headcount">${c.reminderNote||''}</textarea>
+      <p style="font-size:12px;color:#888">SLA for "${c.stage}" is ${SLA[c.stage]} days. Currently ${daysSince(c.stageSince)} days in stage.</p>
+      <button class="ghost" onclick="(()=>{const c=data.clients.find(x=>x.id==='${c.id}');c.reminder='';c.reminderNote='';save();renderTab(c)})()">Clear reminder</button>`;
+    ['reminder','reminderNote'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
+  }
+  else if(activeTab==='log'){
+    t.innerHTML=`<label>Add note</label><div class="row"><div style="flex:3"><input id="f_newlog" placeholder="Called client, sent menu PDF..."/></div>
+      <div style="flex:1"><button onclick="(()=>{const v=document.getElementById('f_newlog').value;if(!v)return;const c=data.clients.find(x=>x.id==='${c.id}');c.log=c.log||[];c.log.unshift({when:new Date().toLocaleString(),text:v});save();renderTab(c)})()">Add</button></div></div>
+      <div class="timeline" style="margin-top:10px">${(c.log||[]).map(e=>`<div class="entry"><div class="when">${e.when}</div>${e.text}</div>`).join('')||'<p style="color:#999;font-size:12px">No activity yet.</p>'}</div>`;
+  }
+}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="catering-crm-"+today()+".json";a.click();
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{try{data=JSON.parse(r.result);save()}catch(err){alert("Invalid file")}};r.readAsText(f);
+}
+
+// seed sample on first run
+if(!data.clients.length){
+  data.clients=[
+    {id:uid(),name:"Sharma Wedding",stage:"Awaiting Confirmation",stageSince:"2026-04-01",agent:"Ravi",phone:"98xxx",email:"",eventDate:"2026-05-12",headcount:"250",venue:"Taj Banquet",dietary:"30 Jain",menu:"North Indian veg buffet",tastingNotes:"Loved paneer tikka",reminder:"2026-04-07",reminderNote:"Confirm advance payment",log:[{when:"Apr 1",text:"Sample menu shared"}]},
+    {id:uid(),name:"Acme Corp Offsite",stage:"Sample Menu Sent",stageSince:today(),agent:"Priya",eventDate:"2026-04-25",headcount:"80",venue:"",dietary:"",menu:"",tastingNotes:"",reminder:"",reminderNote:"",log:[]}
+  ];
+  save();
+}
+render();
+</script>
+</body>
+</html>
