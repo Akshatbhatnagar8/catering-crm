@@ -171,6 +171,7 @@ function renderDialog(c){
       <div class="tab ${activeTab==='menu'?'active':''}" onclick="setTab('menu')">Tasting</div>
       <div class="tab ${activeTab==='reminder'?'active':''}" onclick="setTab('reminder')">Reminder</div>
       <div class="tab ${activeTab==='files'?'active':''}" onclick="setTab('files')">Files (${(c.files||[]).length})</div>
+      <div class="tab ${activeTab==='todo'?'active':''}" onclick="setTab('todo')">Todo</div>
       <div class="tab ${activeTab==='log'?'active':''}" onclick="setTab('log')">Activity (${(c.log||[]).length})</div>
     </div>
     <div id="tabContent"></div>
@@ -247,6 +248,22 @@ function renderTab(c){
       <div style="margin-top:10px">${list}</div>`;
     document.getElementById('f_upload').onchange=e=>uploadFile(c.id,e.target.files[0]);
   }
+  else if(activeTab==='todo'){
+    const PEOPLE=["Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli"];
+    const CATS=["Kitchen","Front","Events","Admin","Other"];
+    t.innerHTML=`<p style="font-size:12px;color:#888;margin:0 0 8px">Create a todo linked to <b>${c.name||"this client"}</b> — it will appear in the assignee's column on the Todos page.</p>
+      <label>Task</label><input id="td_text" placeholder="e.g. Call to confirm advance payment"/>
+      <div class="row">
+        <div><label>Assignee</label><select id="td_who">${PEOPLE.map(p=>`<option>${p}</option>`).join('')}</select></div>
+        <div><label>Priority</label><select id="td_pri"><option value="high">High</option><option value="med" selected>Med</option><option value="low">Low</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>Category</label><select id="td_cat">${CATS.map(x=>`<option ${x==="Events"?"selected":""}>${x}</option>`).join('')}</select></div>
+        <div><label>Due date</label><input type="date" id="td_due"/></div>
+      </div>
+      <label style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="td_rock" style="width:auto"/> ⭐ Big Rock</label>
+      <div style="margin-top:10px"><button onclick="createClientTodo('${c.id}')">+ Create todo</button> <span id="td_status" style="font-size:12px;color:#2e7d32;margin-left:8px"></span></div>`;
+  }
   else if(activeTab==='log'){
     t.innerHTML=`<label>Add note</label><div class="row"><div style="flex:3"><input id="f_newlog" placeholder="Called client, sent menu PDF..."/></div>
       <div style="flex:1"><button onclick="(()=>{const v=document.getElementById('f_newlog').value;if(!v)return;const c=data.clients.find(x=>x.id==='${c.id}');c.log=c.log||[];c.log.unshift({when:new Date().toLocaleString(),text:v});save(c.id);renderTab(c)})()">Add</button></div></div>
@@ -258,6 +275,22 @@ function exportData(){
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="catering-crm-"+today()+".json";a.click();
 }
+async function createClientTodo(clientId){
+  const g=id=>document.getElementById(id);
+  const text=g('td_text').value.trim();
+  if(!text){g('td_status').textContent="Enter a task";g('td_status').style.color="#c0392b";return}
+  const todo={
+    id:uid(),assignee:g('td_who').value,text,done:false,
+    priority:g('td_pri').value,category:g('td_cat').value,
+    due:g('td_due').value||"",bigRock:g('td_rock').checked,
+    recurring:"",clientId,created:new Date().toISOString()
+  };
+  const {error}=await sb.from("todos").upsert({id:todo.id,data:todo});
+  if(error){g('td_status').textContent="Failed: "+error.message;g('td_status').style.color="#c0392b";return}
+  g('td_status').textContent=`✓ Added to ${todo.assignee}`;g('td_status').style.color="#2e7d32";
+  g('td_text').value="";g('td_due').value="";g('td_rock').checked=false;
+}
+
 function addEvent(clientId){
   const c=data.clients.find(x=>x.id===clientId);if(!c)return;
   c.events=c.events||[];
@@ -292,7 +325,7 @@ function importData(e){
   const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);data.clients=j.clients||[];save()}catch(err){alert("Invalid file")}};r.readAsText(f);
 }
 
-Object.assign(window,{openClient,closeModal,setTab,exportData,importData,deleteClient,uploadFile,delFile,addEvent,delEvent,data});
+Object.assign(window,{openClient,closeModal,setTab,exportData,importData,deleteClient,uploadFile,delFile,addEvent,delEvent,createClientTodo,data});
 
 loadAll();
 // seed sample on first run

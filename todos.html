@@ -5,39 +5,68 @@
 <title>The Chowk - Todo List</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
-:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--warn:#c0392b;--border:#e3e0d8}
+:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--warn:#c0392b;--ok:#2e7d32;--border:#e3e0d8;--stale:#e6a700}
 *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
 body{margin:0;background:var(--bg);color:var(--ink)}
 header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
 header h1{font-size:18px;margin:0;flex:1}
 header a{color:var(--accent);text-decoration:none;font-size:14px;font-weight:500}
+header .toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+header .toggle button{background:#fff;color:#555;padding:6px 12px;font-size:12px;border:0;border-right:1px solid var(--border)}
+header .toggle button:last-child{border-right:0}
+header .toggle button.active{background:var(--accent);color:#fff}
 button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:14px}
 button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
-button.mini{padding:2px 8px;font-size:11px}
 .board{display:flex;gap:12px;padding:16px;overflow-x:auto;min-height:calc(100vh - 60px)}
-.col{background:#efece4;border-radius:10px;padding:10px;min-width:240px;width:240px;flex-shrink:0;display:flex;flex-direction:column}
-.col h3{margin:4px 6px 10px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#555;display:flex;justify-content:space-between}
-.col h3 span{background:#fff;border-radius:10px;padding:1px 8px;font-size:11px;color:#666}
-.add{display:flex;gap:6px;margin-bottom:8px}
-.add input{flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px}
-.todo{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px;display:flex;gap:8px;align-items:flex-start}
-.todo.done{opacity:.5}
+.col{background:#efece4;border-radius:10px;padding:10px;min-width:260px;width:260px;flex-shrink:0;display:flex;flex-direction:column}
+.col h3{margin:4px 6px 10px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#555;display:flex;justify-content:space-between;align-items:center}
+.col h3 .count{background:#fff;border-radius:10px;padding:1px 8px;font-size:11px;color:#666}
+.col h3 .count.over{background:#fde7e3;color:var(--warn)}
+.rocks-hdr{font-size:10px;text-transform:uppercase;color:#888;margin:6px 2px 4px;letter-spacing:.5px}
+.add{background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px;margin-bottom:10px}
+.add input[type=text]{width:100%;padding:5px 6px;border:0;font-size:13px;outline:none;background:transparent}
+.add .row2{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.add select,.add input[type=date]{padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fff}
+.add .rock{display:flex;align-items:center;gap:3px;font-size:11px;color:#666;cursor:pointer}
+.todo{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px;display:flex;gap:8px;align-items:flex-start;position:relative}
+.todo.p-high{border-left-color:var(--warn)}
+.todo.p-med{border-left-color:var(--stale)}
+.todo.p-low{border-left-color:#8bb8d6}
+.todo.rock{background:#fff8ef}
+.todo.stale{box-shadow:0 0 0 1px #f0c97d inset}
+.todo.done{opacity:.45}
 .todo.done .text{text-decoration:line-through}
-.todo input[type=checkbox]{margin-top:2px}
-.todo .text{flex:1;word-break:break-word}
-.todo .due{font-size:10px;color:var(--muted);display:block;margin-top:2px}
-.todo .due.overdue{color:var(--warn);font-weight:600}
-.todo .x{background:transparent;color:#aaa;border:0;cursor:pointer;padding:0 2px;font-size:14px}
+.todo input[type=checkbox]{margin-top:2px;flex-shrink:0}
+.todo .text{flex:1;word-break:break-word;line-height:1.3}
+.todo .meta{font-size:10px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
+.todo .meta .chip{background:#eee;border-radius:8px;padding:0 6px;color:#555}
+.todo .meta .due.overdue{color:var(--warn);font-weight:600}
+.todo .meta .stale-tag{color:#b37700}
+.todo .meta .rec{color:#2e7d32}
+.todo .meta .client{color:var(--accent)}
+.todo .x{background:transparent;color:#bbb;border:0;cursor:pointer;padding:0 2px;font-size:16px;line-height:1}
 .todo .x:hover{color:var(--warn)}
+.summary{padding:16px}
+.summary .col{background:#fff;border:1px solid var(--border);padding:14px}
+.summary .done-list,.summary .undone-list{font-size:12px;margin-top:4px}
+.summary .done-list div{color:#666;text-decoration:line-through}
+.summary .undone-list div{color:#333}
+.summary h4{margin:10px 0 4px;font-size:12px;text-transform:uppercase;color:#888}
+.bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;margin-top:6px}
+.bar>span{display:block;height:100%;background:var(--ok)}
 </style>
 </head>
 <body>
 <header>
 <h1>✅ The Chowk - Todo List</h1>
+<div class="toggle" id="viewToggle">
+  <button data-v="active" class="active">Active</button>
+  <button data-v="week">Last Week</button>
+</div>
 <a href="/">← Sales Tool</a>
 </header>
 
-<div class="board" id="board"></div>
+<div id="main"></div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -46,20 +75,56 @@ const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb=createClient(SUPA_URL,SUPA_KEY);
 
 const PEOPLE=["Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli"];
-let todos=[];
+const CATEGORIES=["Kitchen","Front","Events","Admin","Other"];
+const PRIORITIES=[["high","High"],["med","Med"],["low","Low"]];
+const ACTIVE_CAP=10;
+const STALE_DAYS=7;
+
+let todos=[],clients=[];
+let view="active";
 const dirty=new Set(),deleted=new Set();
 let saveTimer=null;
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>new Date().toISOString().slice(0,10);
+const daysBetween=(a,b)=>Math.floor((new Date(b)-new Date(a))/86400000);
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
 const fmtDate=d=>{if(!d)return "";const [y,m,da]=d.split("-");return da&&m&&y?`${da} ${m} ${y}`:d};
 const esc=s=>(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 async function loadAll(){
-  const {data:rows,error}=await sb.from("todos").select("data").order("updated_at",{ascending:false});
-  if(error){alert("Load failed: "+error.message);return}
-  todos=(rows||[]).map(r=>r.data);
+  const [tRes,cRes]=await Promise.all([
+    sb.from("todos").select("data").order("updated_at",{ascending:false}),
+    sb.from("clients").select("data")
+  ]);
+  if(tRes.error){alert("Load failed: "+tRes.error.message);return}
+  todos=(tRes.data||[]).map(r=>r.data).map(normalize);
+  clients=(cRes.data||[]).map(r=>r.data);
+  resetRecurring();
   render();
+}
+function normalize(t){
+  t.priority=t.priority||"med";
+  t.category=t.category||"Other";
+  t.recurring=t.recurring||"";
+  t.bigRock=!!t.bigRock;
+  t.created=t.created||new Date().toISOString();
+  return t;
+}
+function resetRecurring(){
+  // If a recurring task is done but the next period has arrived, un-done it and bump due
+  const t=today();
+  todos.forEach(x=>{
+    if(!x.recurring||!x.done||!x.doneAt)return;
+    const doneDay=x.doneAt.slice(0,10);
+    const period=x.recurring==="daily"?1:x.recurring==="weekly"?7:0;
+    if(period && daysBetween(doneDay,t)>=period){
+      x.done=false;x.doneAt="";
+      if(x.due)x.due=addDays(x.due,period);
+      dirty.add(x.id);
+    }
+  });
+  if(dirty.size){clearTimeout(saveTimer);saveTimer=setTimeout(flush,400)}
 }
 async function flush(){
   const up=todos.filter(t=>dirty.has(t.id)).map(t=>({id:t.id,data:t}));
@@ -67,47 +132,139 @@ async function flush(){
   if(up.length)await sb.from("todos").upsert(up);
   if(deleted.size){await sb.from("todos").delete().in("id",[...deleted]);deleted.clear()}
 }
-function save(id){
-  if(id)dirty.add(id);
-  render();
-  clearTimeout(saveTimer);saveTimer=setTimeout(flush,400);
-}
+function save(id){if(id)dirty.add(id);render();clearTimeout(saveTimer);saveTimer=setTimeout(flush,400)}
 window.addEventListener("beforeunload",flush);
 
 function render(){
-  const board=document.getElementById("board");board.innerHTML="";
+  const main=document.getElementById("main");
+  main.className=view==="week"?"":"";
+  main.innerHTML="";
+  if(view==="active")renderActive(main);
+  else renderWeek(main);
+}
+
+function renderActive(root){
+  const board=document.createElement("div");board.className="board";
   PEOPLE.forEach(p=>{
-    const list=todos.filter(t=>t.assignee===p).sort((a,b)=>(a.done?1:0)-(b.done?1:0)||(a.created||"").localeCompare(b.created||""));
-    const open=list.filter(t=>!t.done).length;
+    const mine=todos.filter(t=>t.assignee===p);
+    const rocks=mine.filter(t=>t.bigRock&&!t.done).sort(sortFn);
+    const others=mine.filter(t=>!t.bigRock).sort(sortFn);
+    const openCount=mine.filter(t=>!t.done).length;
     const col=document.createElement("div");col.className="col";
-    col.innerHTML=`<h3>${p}<span>${open}</span></h3>
+    col.innerHTML=`<h3>${p}<span class="count ${openCount>ACTIVE_CAP?"over":""}">${openCount}</span></h3>`;
+
+    // Add form
+    col.innerHTML+=`
       <div class="add">
-        <input placeholder="New todo…" id="in_${p}"/>
-        <input type="date" id="due_${p}" style="width:120px"/>
-      </div>
-      <div id="list_${p}"></div>`;
+        <input type="text" placeholder="New todo…" id="in_${p}"/>
+        <div class="row2">
+          <select id="pri_${p}">${PRIORITIES.map(([v,l])=>`<option value="${v}" ${v==="med"?"selected":""}>${l}</option>`).join('')}</select>
+          <select id="cat_${p}">${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select>
+          <select id="rec_${p}"><option value="">One-off</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
+          <input type="date" id="due_${p}"/>
+          <label class="rock"><input type="checkbox" id="rock_${p}"/>⭐</label>
+        </div>
+      </div>`;
+
+    if(rocks.length){
+      const h=document.createElement("div");h.className="rocks-hdr";h.textContent="⭐ Big Rocks";col.appendChild(h);
+      rocks.forEach(t=>col.appendChild(todoEl(t)));
+    }
+    if(openCount>ACTIVE_CAP){
+      const warn=document.createElement("div");warn.style.cssText="font-size:10px;color:#b37700;margin:4px 2px;text-transform:uppercase";warn.textContent=`⚠ ${openCount}/${ACTIVE_CAP} cap — cull or complete`;
+      col.appendChild(warn);
+    }
+    others.forEach(t=>col.appendChild(todoEl(t)));
+
     board.appendChild(col);
-    const listEl=col.querySelector(`#list_${p}`);
-    list.forEach(t=>{
-      const d=document.createElement("div");
-      d.className="todo"+(t.done?" done":"");
-      const overdue=t.due&&t.due<today()&&!t.done;
-      d.innerHTML=`<input type="checkbox" ${t.done?"checked":""}/>
-        <div class="text">${esc(t.text)}${t.due?`<span class="due ${overdue?"overdue":""}">📅 ${fmtDate(t.due)}</span>`:""}</div>
-        <button class="x" title="Delete">×</button>`;
-      d.querySelector('input[type=checkbox]').onchange=e=>{t.done=e.target.checked;save(t.id)};
-      d.querySelector('.x').onclick=()=>{deleted.add(t.id);todos=todos.filter(x=>x.id!==t.id);save();flush()};
-      listEl.appendChild(d);
-    });
+    // bind input
     const input=col.querySelector(`#in_${p}`);
-    const dueInput=col.querySelector(`#due_${p}`);
     input.onkeydown=e=>{
-      if(e.key==="Enter"&&input.value.trim()){
-        const t={id:uid(),assignee:p,text:input.value.trim(),done:false,due:dueInput.value||"",created:new Date().toISOString()};
-        todos.push(t);save(t.id);
-      }
+      if(e.key==="Enter"&&input.value.trim())addTodo(p,input);
     };
   });
+  root.appendChild(board);
+
+  // wire view toggle
+  document.querySelectorAll("#viewToggle button").forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll("#viewToggle button").forEach(x=>x.classList.toggle("active",x===b));render()});
+}
+
+function sortFn(a,b){
+  if(a.done!==b.done)return a.done?1:-1;
+  const pr={high:0,med:1,low:2};
+  if(pr[a.priority]!==pr[b.priority])return pr[a.priority]-pr[b.priority];
+  return (a.due||"9999").localeCompare(b.due||"9999");
+}
+
+function todoEl(t){
+  const d=document.createElement("div");
+  const ageDays=daysBetween(t.created.slice(0,10),today());
+  const stale=!t.done && ageDays>STALE_DAYS && !t.recurring;
+  d.className=`todo p-${t.priority}`+(t.done?" done":"")+(t.bigRock?" rock":"")+(stale?" stale":"");
+  const overdue=t.due&&t.due<today()&&!t.done;
+  const client=t.clientId?clients.find(c=>c.id===t.clientId):null;
+  d.innerHTML=`<input type="checkbox" ${t.done?"checked":""}/>
+    <div class="text">${esc(t.text)}
+      <div class="meta">
+        ${t.category?`<span class="chip">${t.category}</span>`:""}
+        ${t.recurring?`<span class="rec">🔁 ${t.recurring}</span>`:""}
+        ${t.due?`<span class="due ${overdue?"overdue":""}">📅 ${fmtDate(t.due)}</span>`:""}
+        ${stale?`<span class="stale-tag">⚠ ${ageDays}d old</span>`:""}
+        ${client?`<span class="client">👤 ${esc(client.name||"client")}</span>`:""}
+      </div>
+    </div>
+    <button class="x" title="Delete">×</button>`;
+  d.querySelector('input[type=checkbox]').onchange=e=>{
+    t.done=e.target.checked;
+    t.doneAt=t.done?new Date().toISOString():"";
+    save(t.id);
+  };
+  d.querySelector('.x').onclick=()=>{
+    deleted.add(t.id);todos=todos.filter(x=>x.id!==t.id);save();flush();
+  };
+  return d;
+}
+
+function addTodo(p,input){
+  const col=input.closest('.col');
+  const g=id=>col.querySelector(id);
+  const t={
+    id:uid(),assignee:p,text:input.value.trim(),done:false,
+    priority:g(`#pri_${p}`).value,
+    category:g(`#cat_${p}`).value,
+    recurring:g(`#rec_${p}`).value,
+    due:g(`#due_${p}`).value||"",
+    bigRock:g(`#rock_${p}`).checked,
+    created:new Date().toISOString()
+  };
+  todos.push(t);save(t.id);
+}
+
+function renderWeek(root){
+  const weekAgo=addDays(today(),-7);
+  const div=document.createElement("div");div.className="summary";
+  div.innerHTML=`<h2 style="margin:0 0 14px">Last 7 days (${fmtDate(weekAgo)} → ${fmtDate(today())})</h2>`;
+  const grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px";
+  PEOPLE.forEach(p=>{
+    const mine=todos.filter(t=>t.assignee===p);
+    const done=mine.filter(t=>t.done&&t.doneAt&&t.doneAt>=weekAgo);
+    const open=mine.filter(t=>!t.done);
+    const rolledOver=open.filter(t=>daysBetween(t.created.slice(0,10),today())>STALE_DAYS);
+    const total=done.length+open.length;
+    const pct=total?Math.round(done.length*100/total):0;
+    const card=document.createElement("div");card.className="col";
+    card.innerHTML=`<h3>${p}<span class="count">${pct}%</span></h3>
+      <div class="bar"><span style="width:${pct}%"></span></div>
+      <h4>✅ Completed (${done.length})</h4>
+      <div class="done-list">${done.map(t=>`<div>${esc(t.text)}</div>`).join('')||'<div style="color:#bbb">Nothing</div>'}</div>
+      <h4>⏳ Still open (${open.length})</h4>
+      <div class="undone-list">${open.map(t=>`<div>${esc(t.text)}${t.bigRock?" ⭐":""}</div>`).join('')||'<div style="color:#bbb">Nothing</div>'}</div>
+      ${rolledOver.length?`<h4 style="color:#b37700">⚠ Stale >7d (${rolledOver.length})</h4><div class="undone-list">${rolledOver.map(t=>`<div>${esc(t.text)}</div>`).join('')}</div>`:""}`;
+    grid.appendChild(card);
+  });
+  div.appendChild(grid);
+  root.appendChild(div);
+  document.querySelectorAll("#viewToggle button").forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll("#viewToggle button").forEach(x=>x.classList.toggle("active",x===b));render()});
 }
 
 loadAll();
