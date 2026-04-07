@@ -44,12 +44,16 @@ button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 .todo .meta .stale-tag{color:#b37700}
 .todo .meta .rec{color:#2e7d32}
 .todo .meta .client{color:var(--accent)}
-.todo .x{background:transparent;color:#bbb;border:0;cursor:pointer;padding:0 2px;font-size:16px;line-height:1}
+.todo .x,.todo .ed{background:transparent;color:#bbb;border:0;cursor:pointer;padding:0 2px;font-size:14px;line-height:1}
 .todo .x:hover{color:var(--warn)}
+.todo .ed:hover{color:var(--accent)}
+.summary button.push{background:#fff;color:var(--accent);border:1px solid var(--accent);padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-left:6px}
+.summary .undone-list div{display:flex;align-items:center;gap:4px}
 .summary{padding:16px}
 .summary .col{background:#fff;border:1px solid var(--border);padding:14px}
 .summary .done-list,.summary .undone-list{font-size:12px;margin-top:4px}
-.summary .done-list div{color:#666;text-decoration:line-through}
+.summary .done-list div{color:#666;display:flex;align-items:center;gap:4px}
+.summary .done-list div>span{text-decoration:line-through}
 .summary .undone-list div{color:#333}
 .summary h4{margin:10px 0 4px;font-size:12px;text-transform:uppercase;color:#888}
 .bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;margin-top:6px}
@@ -57,6 +61,15 @@ button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 #undoBar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;display:none;align-items:center;gap:12px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 #undoBar.show{display:flex}
 #undoBar button{background:var(--accent);color:#fff;border:0;padding:4px 12px;border-radius:4px;font-size:12px;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50}
+.modal.show{display:flex}
+.dialog{background:#fff;border-radius:10px;width:460px;max-width:95vw;padding:20px}
+.dialog h2{margin:0 0 12px;font-size:16px}
+.dialog label{display:block;font-size:11px;color:#555;margin:8px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+.dialog input,.dialog select,.dialog textarea{width:100%;padding:7px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit}
+.dialog .row{display:flex;gap:8px}
+.dialog .row>div{flex:1}
+.dialog .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 </style>
 </head>
 <body>
@@ -71,6 +84,7 @@ button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 
 <div id="main"></div>
 <div id="undoBar"><span id="undoMsg"></span><button id="undoBtn">Undo</button></div>
+<div class="modal" id="editModal"><div class="dialog" id="editDialog"></div></div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -217,12 +231,14 @@ function todoEl(t){
         ${client?`<span class="client">👤 ${esc(client.name||"client")}</span>`:""}
       </div>
     </div>
+    <button class="ed" title="Edit">✎</button>
     <button class="x" title="Delete">×</button>`;
   d.querySelector('input[type=checkbox]').onchange=e=>{
     t.done=e.target.checked;
     t.doneAt=t.done?new Date().toISOString():"";
     save(t.id);
   };
+  d.querySelector('.ed').onclick=()=>openEditor(t);
   d.querySelector('.x').onclick=()=>{
     const snapshot={...t};
     deleted.add(t.id);todos=todos.filter(x=>x.id!==t.id);save();flush();
@@ -246,6 +262,47 @@ function addTodo(p,input){
   todos.push(t);save(t.id);
 }
 
+function openEditor(t){
+  const d=document.getElementById("editDialog");
+  d.innerHTML=`<h2>Edit todo</h2>
+    <label>Task</label><textarea id="e_text" rows="2">${esc(t.text)}</textarea>
+    <div class="row">
+      <div><label>Assignee</label><select id="e_who">${PEOPLE.map(p=>`<option ${p===t.assignee?"selected":""}>${p}</option>`).join('')}</select></div>
+      <div><label>Priority</label><select id="e_pri">${PRIORITIES.map(([v,l])=>`<option value="${v}" ${v===t.priority?"selected":""}>${l}</option>`).join('')}</select></div>
+    </div>
+    <div class="row">
+      <div><label>Category</label><select id="e_cat">${CATEGORIES.map(c=>`<option ${c===t.category?"selected":""}>${c}</option>`).join('')}</select></div>
+      <div><label>Recurring</label><select id="e_rec"><option value="" ${!t.recurring?"selected":""}>One-off</option><option value="daily" ${t.recurring==="daily"?"selected":""}>Daily</option><option value="weekly" ${t.recurring==="weekly"?"selected":""}>Weekly</option></select></div>
+    </div>
+    <label>Due date</label><input type="date" id="e_due" value="${t.due||''}"/>
+    <label style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="e_rock" ${t.bigRock?"checked":""} style="width:auto"/> ⭐ Big Rock</label>
+    <div class="actions">
+      <button class="ghost" onclick="document.getElementById('editModal').classList.remove('show')">Cancel</button>
+      <button onclick="saveEdit('${t.id}')">Save</button>
+    </div>`;
+  document.getElementById("editModal").classList.add("show");
+}
+function saveEdit(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  const g=x=>document.getElementById(x);
+  t.text=g('e_text').value.trim();
+  t.assignee=g('e_who').value;
+  t.priority=g('e_pri').value;
+  t.category=g('e_cat').value;
+  t.recurring=g('e_rec').value;
+  t.due=g('e_due').value;
+  t.bigRock=g('e_rock').checked;
+  save(t.id);flush();
+  document.getElementById("editModal").classList.remove("show");
+}
+async function pushBack(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  t.done=false;t.doneAt="";
+  t.created=new Date().toISOString();
+  save(t.id);await flush();render();
+}
+window.saveEdit=saveEdit;window.pushBack=pushBack;
+
 function renderWeek(root){
   const weekAgo=addDays(today(),-7);
   const div=document.createElement("div");div.className="summary";
@@ -262,7 +319,7 @@ function renderWeek(root){
     card.innerHTML=`<h3>${p}<span class="count">${pct}%</span></h3>
       <div class="bar"><span style="width:${pct}%"></span></div>
       <h4>✅ Completed (${done.length})</h4>
-      <div class="done-list">${done.map(t=>`<div>${esc(t.text)}</div>`).join('')||'<div style="color:#bbb">Nothing</div>'}</div>
+      <div class="done-list">${done.map(t=>`<div><span style="flex:1">${esc(t.text)}</span><button class="push" onclick="pushBack('${t.id}')" title="Reopen as active todo">↺ Reopen</button></div>`).join('')||'<div style="color:#bbb">Nothing</div>'}</div>
       <h4>⏳ Still open (${open.length})</h4>
       <div class="undone-list">${open.map(t=>`<div>${esc(t.text)}${t.bigRock?" ⭐":""}</div>`).join('')||'<div style="color:#bbb">Nothing</div>'}</div>
       ${rolledOver.length?`<h4 style="color:#b37700">⚠ Stale >7d (${rolledOver.length})</h4><div class="undone-list">${rolledOver.map(t=>`<div>${esc(t.text)}</div>`).join('')}</div>`:""}`;
