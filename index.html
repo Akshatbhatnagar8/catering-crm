@@ -73,12 +73,13 @@ function migrateClient(c){
   }
   return c;
 }
+function fmtDate(d){if(!d)return "";const [y,m,day]=d.split("-");return day&&m&&y?`${day} ${m} ${y}`:d}
 function eventSummary(c){
   const evs=(c.events||[]).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""));
   if(!evs.length)return "";
   const dates=evs.filter(e=>e.date).map(e=>e.date);
   const first=dates[0],last=dates[dates.length-1];
-  const range=first?(first===last?first:first+" → "+last):"";
+  const range=first?(first===last?fmtDate(first):fmtDate(first)+" → "+fmtDate(last)):"";
   const types=evs.map(e=>e.type).filter(Boolean).join(", ");
   return {range,types,count:evs.length};
 }
@@ -134,7 +135,7 @@ function render(){
         ${summ?`<div style="font-size:11px;color:#666">📅 ${summ.range} ${totalPax?"• "+totalPax+" pax":""}</div>
         <div style="font-size:11px;color:#888;margin-top:2px">${summ.count} event${summ.count>1?"s":""}: ${summ.types}</div>`:""}
         <div class="meta"><span>${c.agent||"—"}</span><span>${days}d in stage</span></div>
-        ${c.reminder?`<div style="font-size:11px;margin-top:4px;color:${nextDue?'#c0392b':'#888'}">⏰ ${c.reminder}</div>`:""}`;
+        ${c.reminder?`<div style="font-size:11px;margin-top:4px;color:${nextDue?'#c0392b':'#888'}">⏰ ${fmtDate(c.reminder)}</div>`:""}`;
       div.onclick=()=>openClient(c.id);
       col.appendChild(div);
     });
