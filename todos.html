@@ -135,7 +135,7 @@ function resetRecurring(){
   todos.forEach(x=>{
     if(!x.recurring||!x.done||!x.doneAt)return;
     const doneDay=x.doneAt.slice(0,10);
-    const period=x.recurring==="daily"?1:x.recurring==="weekly"?7:0;
+    const period=x.recurring==="daily"?1:x.recurring==="weekly"?7:x.recurring==="monthly"?30:0;
     if(period && daysBetween(doneDay,t)>=period){
       x.done=false;x.doneAt="";
       if(x.due)x.due=addDays(x.due,period);
@@ -178,7 +178,7 @@ function renderActive(root){
         <div class="row2">
           <select id="pri_${p}">${PRIORITIES.map(([v,l])=>`<option value="${v}" ${v==="med"?"selected":""}>${l}</option>`).join('')}</select>
           <select id="cat_${p}">${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select>
-          <select id="rec_${p}"><option value="">One-off</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
+          <select id="rec_${p}"><option value="">One-off</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
           <input type="date" id="due_${p}"/>
           <label class="rock"><input type="checkbox" id="rock_${p}"/>⭐</label>
         </div>
@@ -272,7 +272,7 @@ function openEditor(t){
     </div>
     <div class="row">
       <div><label>Category</label><select id="e_cat">${CATEGORIES.map(c=>`<option ${c===t.category?"selected":""}>${c}</option>`).join('')}</select></div>
-      <div><label>Recurring</label><select id="e_rec"><option value="" ${!t.recurring?"selected":""}>One-off</option><option value="daily" ${t.recurring==="daily"?"selected":""}>Daily</option><option value="weekly" ${t.recurring==="weekly"?"selected":""}>Weekly</option></select></div>
+      <div><label>Recurring</label><select id="e_rec"><option value="" ${!t.recurring?"selected":""}>One-off</option><option value="daily" ${t.recurring==="daily"?"selected":""}>Daily</option><option value="weekly" ${t.recurring==="weekly"?"selected":""}>Weekly</option><option value="monthly" ${t.recurring==="monthly"?"selected":""}>Monthly</option></select></div>
     </div>
     <label>Due date</label><input type="date" id="e_due" value="${t.due||''}"/>
     <label style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="e_rock" ${t.bigRock?"checked":""} style="width:auto"/> ⭐ Big Rock</label>
