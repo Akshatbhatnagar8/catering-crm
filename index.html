@@ -81,7 +81,7 @@ function eventSummary(c){
   const dates=evs.filter(e=>e.date).map(e=>e.date);
   const first=dates[0],last=dates[dates.length-1];
   const range=first?(first===last?fmtDate(first):fmtDate(first)+" → "+fmtDate(last)):"";
-  const types=evs.map(e=>e.type).filter(Boolean).join(", ");
+  const types=evs.map(e=>e.type==="Other"&&e.customType?e.customType:e.type).filter(Boolean).join(", ");
   return {range,types,count:evs.length};
 }
 const SLA={"Lead from Agent":2,"Tasting Scheduled":1,"Tasting Completed":2,"Sample Menu Sent":3,"Menu Finalization":3,"Awaiting Confirmation":2,"Confirmed":999,"Lost":999};
@@ -202,6 +202,7 @@ function renderTab(c){
       <div style="border:1px solid #e3e0d8;border-radius:8px;padding:10px;margin-bottom:10px;background:#fafaf7">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
           <select data-ev="${i}" data-f="type" style="flex:1">${EVENT_TYPES.map(et=>`<option ${et===e.type?'selected':''}>${et}</option>`).join('')}</select>
+          ${e.type==="Other"?`<input data-ev="${i}" data-f="customType" placeholder="Enter event type…" value="${e.customType||''}" style="flex:1"/>`:""}
           <input type="date" data-ev="${i}" data-f="date" value="${e.date||''}" style="flex:1"/>
           <button class="danger" style="padding:4px 10px;font-size:12px" onclick="delEvent('${c.id}',${i})">×</button>
         </div>
@@ -214,7 +215,7 @@ function renderTab(c){
     t.innerHTML=list+`<button onclick="addEvent('${c.id}')">+ Add event</button>`;
     t.querySelectorAll('[data-ev]').forEach(el=>{
       const i=+el.dataset.ev,f=el.dataset.f;
-      const handler=e=>{c.events[i][f]=e.target.value;save(c.id)};
+      const handler=e=>{c.events[i][f]=e.target.value;save(c.id);if(f==='type')renderDialog(c)};
       el.oninput=handler;el.onchange=handler;
     });
   }
