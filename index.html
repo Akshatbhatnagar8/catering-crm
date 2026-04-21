@@ -224,7 +224,7 @@ function renderTab(c){
     document.getElementById('f_tastingNotes').oninput=e=>upd('tastingNotes',e.target.value);
   }
   else if(activeTab==='reminder'){
-    const PEOPLE2=["","Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli"];
+    const PEOPLE2=["","Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli","Vicky"];
     t.innerHTML=`<label>Next follow-up date</label><input type="date" id="f_reminder" value="${c.reminder||''}"/>
       <label>Assigned to</label><select id="f_reminderAssignee">${PEOPLE2.map(p=>`<option value="${p}" ${p===(c.reminderAssignee||'')?'selected':''}>${p||'— unassigned —'}</option>`).join('')}</select>
       <label>Reminder note</label><textarea id="f_reminderNote" placeholder="e.g. Call to confirm final menu and headcount">${c.reminderNote||''}</textarea>
@@ -256,7 +256,7 @@ function renderTab(c){
     document.getElementById('f_upload').onchange=e=>uploadFile(c.id,e.target.files[0]);
   }
   else if(activeTab==='todo'){
-    const PEOPLE=["Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli"];
+    const PEOPLE=["Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli","Vicky"];
     const CATS=["Kitchen","Front","Events","Catering","Sales","Marketing","HR","Accounting","Admin","Other"];
     t.innerHTML=`<p style="font-size:12px;color:#888;margin:0 0 8px">Create a todo linked to <b>${c.name||"this client"}</b> — it will appear in the assignee's column on the Todos page.</p>
       <label>Task</label><input id="td_text" placeholder="e.g. Call to confirm advance payment"/>
