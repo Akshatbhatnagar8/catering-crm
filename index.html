@@ -65,7 +65,7 @@ const SUPA_URL="https://lvcioeljvwahvsulgilt.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2Y2lvZWxqdndhaHZzdWxnaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDU4MjIsImV4cCI6MjA5MTEyMTgyMn0.RnOOCg3x-ltDU3H-yME5g8Vd6XCHILXqqFjyWDD1AJs";
 const sb=createClient(SUPA_URL,SUPA_KEY);
 
-const STAGES=["Lead from Agent","Tasting Scheduled","Tasting Completed","Sample Menu Sent","Menu Finalization","Awaiting Confirmation","Confirmed","Lost"];
+const STAGES=["Lead from Agent","Tasting Scheduled","Tasting Completed","Sample Menu Sent","Menu Finalization","Awaiting Confirmation","Confirmed","Lost","Completed"];
 const EVENT_TYPES=["Haldi","Mehendi","After Party","Wedding","Sadhya Dinner","High Tea","Breakfast","Lunch","Other"];
 function migrateClient(c){
   if(!c.events)c.events=[];
@@ -84,7 +84,7 @@ function eventSummary(c){
   const types=evs.map(e=>e.type==="Other"&&e.customType?e.customType:e.type).filter(Boolean).join(", ");
   return {range,types,count:evs.length};
 }
-const SLA={"Lead from Agent":2,"Tasting Scheduled":1,"Tasting Completed":2,"Sample Menu Sent":3,"Menu Finalization":3,"Awaiting Confirmation":2,"Confirmed":999,"Lost":999};
+const SLA={"Lead from Agent":2,"Tasting Scheduled":1,"Tasting Completed":2,"Sample Menu Sent":3,"Menu Finalization":3,"Awaiting Confirmation":2,"Confirmed":999,"Lost":999,"Completed":999};
 
 let data={clients:[]};
 let editingId=null,activeTab="details";
