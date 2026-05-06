@@ -182,6 +182,7 @@ function renderActive(root){
           <input type="date" id="due_${p}"/>
           <label class="rock"><input type="checkbox" id="rock_${p}"/>⭐</label>
         </div>
+        <button id="add_${p}" style="width:100%;margin-top:6px;padding:7px;font-size:13px">+ Add</button>
       </div>`;
 
     if(rocks.length){
@@ -197,9 +198,8 @@ function renderActive(root){
     board.appendChild(col);
     // bind input
     const input=col.querySelector(`#in_${p}`);
-    input.onkeydown=e=>{
-      if(e.key==="Enter"&&input.value.trim())addTodo(p,input);
-    };
+    input.onkeydown=e=>{if(e.key==="Enter"&&input.value.trim())addTodo(p,input)};
+    col.querySelector(`#add_${p}`).onclick=()=>{if(input.value.trim())addTodo(p,input)};
   });
   root.appendChild(board);
 
