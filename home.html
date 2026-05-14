@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>The Chowk</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:0}
+body{background:#f6f5f1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px}
+.logo{font-size:30px;font-weight:700;color:#222;margin-bottom:4px;text-align:center}
+.sub{font-size:14px;color:#999;margin-bottom:36px;text-align:center}
+.cards{display:flex;flex-direction:column;gap:14px;width:100%;max-width:420px}
+a{text-decoration:none}
+.card{background:#fff;border:1px solid #e3e0d8;border-radius:16px;padding:22px 20px;display:flex;align-items:center;gap:18px;transition:box-shadow .15s,transform .15s;-webkit-tap-highlight-color:transparent}
+.card:active{transform:scale(.98)}
+.card:hover{box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.card .icon{font-size:36px;flex-shrink:0;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+.card .icon.green{background:#e8f5e9}
+.card .icon.orange{background:#fdf0e8}
+.card .icon.blue{background:#e8f0fb}
+.card .text{flex:1}
+.card .title{font-size:16px;font-weight:700;color:#222;margin-bottom:3px}
+.card .desc{font-size:12px;color:#999;line-height:1.45}
+.card .arrow{font-size:20px;color:#ccc;flex-shrink:0}
+.card:hover .arrow{color:#b8541a}
+</style>
+</head>
+<body>
+<div class="logo">🍽️ The Chowk</div>
+<div class="sub">Internal Operations</div>
+<div class="cards">
+  <a href="/todos.html">
+    <div class="card">
+      <div class="icon green">✅</div>
+      <div class="text">
+        <div class="title">To Do Lists</div>
+        <div class="desc">Team tasks, reminders and follow-ups for the whole team</div>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+  </a>
+  <a href="/index.html">
+    <div class="card">
+      <div class="icon orange">💍</div>
+      <div class="text">
+        <div class="title">Wedding Pipeline</div>
+        <div class="desc">Leads, tastings, menus and sales confirmations</div>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+  </a>
+  <a href="/groups.html">
+    <div class="card">
+      <div class="icon blue">🗓️</div>
+      <div class="text">
+        <div class="title">Travel Agents & ODC</div>
+        <div class="desc">Group bookings and outdoor catering calendar</div>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+  </a>
+</div>
+</body>
+</html>
