@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>The Chowk - Groups & ODC</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root{
+  --bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;
+  --border:#e3e0d8;--warn:#c0392b;
+}
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink)}
+a{text-decoration:none}
+
+/* HEADER */
+header{background:#fff;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20}
+header h1{font-size:18px;margin:0;flex:1}
+header nav a{color:var(--accent);font-size:14px;font-weight:500;margin-left:12px}
+button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:14px}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
+button.icon{background:transparent;border:1px solid var(--border);color:var(--ink);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:14px}
+
+/* SUMMARY BAR */
+.summary-bar{display:flex;gap:10px;padding:14px 20px;overflow-x:auto}
+.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:120px;text-align:center;flex-shrink:0}
+.stat .val{font-size:22px;font-weight:700;color:var(--accent)}
+.stat .lbl{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+
+/* VENUE LEGEND */
+.legend{display:flex;gap:8px;padding:0 20px 12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#555}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* CONTROLS */
+.controls{display:flex;align-items:center;gap:10px;padding:0 20px 14px}
+.controls h2{margin:0;font-size:16px;flex:1;text-align:center}
+.toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.toggle button{background:#fff;color:#555;padding:6px 12px;font-size:12px;border:0;border-right:1px solid var(--border)}
+.toggle button:last-child{border-right:0}
+.toggle button.active{background:var(--accent);color:#fff}
+
+/* CALENDAR */
+.cal{padding:0 20px 20px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-hdr{text-align:center;font-size:11px;text-transform:uppercase;color:var(--muted);padding:4px 0;letter-spacing:.4px}
+.cal-day{background:#fff;border:1px solid var(--border);border-radius:8px;min-height:90px;padding:6px;cursor:pointer;position:relative;transition:border-color .15s}
+.cal-day:hover{border-color:var(--accent)}
+.cal-day.empty{background:transparent;border-color:transparent;cursor:default}
+.cal-day.today{border-color:var(--accent);border-width:2px}
+.cal-day.other-month{opacity:.4}
+.cal-day .day-num{font-size:11px;font-weight:600;color:#888;margin-bottom:4px}
+.cal-day.today .day-num{color:var(--accent)}
+.cal-day .pills{display:flex;flex-direction:column;gap:2px}
+.pill-row{font-size:10px;border-radius:4px;padding:2px 5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.cal-day .pax-total{position:absolute;bottom:5px;right:6px;font-size:10px;font-weight:700;color:var(--muted)}
+
+/* LIST VIEW */
+.list-view{padding:0 20px 20px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--border);font-size:13px}
+thead tr{background:#f0ede6}
+th{padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#666;white-space:nowrap}
+td{padding:8px 10px;border-top:1px solid var(--border);vertical-align:top}
+tr:hover td{background:#fafaf7}
+.badge{display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600;color:#fff}
+.badge.new{background:#2e7d32}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow-y:auto}
+.modal.show{display:flex}
+.dialog{background:#fff;border-radius:12px;width:560px;max-width:100%;padding:22px;margin:auto}
+.dialog h2{margin:0 0 4px;font-size:18px}
+.dialog .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+label{display:block;font-size:11px;color:#555;margin:10px 0 3px;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+.pax-row{display:flex;gap:8px}
+.pax-row>div{flex:1;text-align:center}
+.pax-row label{text-align:center}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* DAY MODAL */
+.day-booking{background:#fafaf7;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;position:relative}
+.day-booking .venue-bar{width:4px;position:absolute;left:0;top:0;bottom:0;border-radius:8px 0 0 8px}
+.day-booking .db-main{margin-left:10px}
+.day-booking .db-title{font-weight:600;font-size:13px}
+.day-booking .db-meta{font-size:11px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.day-booking .db-pax{font-size:12px;font-weight:600;color:var(--ink);margin-top:4px}
+.day-booking .db-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+.day-booking button{padding:3px 8px;font-size:11px}
+
+@media(max-width:600px){
+  .cal-day{min-height:60px;padding:4px}
+  .pill-row{display:none}
+  .cal-day .pax-total{font-size:9px}
+  th,td{padding:6px 6px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🗓️ Groups & ODC</h1>
+  <button onclick="openAdd()">+ Add Booking</button>
+  <nav>
+    <a href="/">← Sales</a>
+    <a href="/todos.html">✅ Todos</a>
+  </nav>
+</header>
+
+<div class="summary-bar" id="summaryBar"></div>
+<div class="legend" id="legend"></div>
+<div class="controls">
+  <button class="icon" id="prevBtn">‹</button>
+  <h2 id="monthLabel"></h2>
+  <button class="icon" id="nextBtn">›</button>
+  <div class="toggle" id="viewToggle">
+    <button data-v="cal" class="active">Calendar</button>
+    <button data-v="list">List</button>
+  </div>
+</div>
+<div id="main"></div>
+
+<!-- Day detail modal -->
+<div class="modal" id="dayModal">
+  <div class="dialog" id="dayDialog"></div>
+</div>
+
+<!-- Add/Edit modal -->
+<div class="modal" id="formModal">
+  <div class="dialog" id="formDialog"></div>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const sb=createClient(
+  "https://lvcioeljvwahvsulgilt.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2Y2lvZWxqdndhaHZzdWxnaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDU4MjIsImV4cCI6MjA5MTEyMTgyMn0.RnOOCg3x-ltDU3H-yME5g8Vd6XCHILXqqFjyWDD1AJs"
+);
+
+const VENUES=[
+  {name:"The Chowk Ubud",   color:"#b8541a"},
+  {name:"The Chowk Sanur",  color:"#2e6fb8"},
+  {name:"The Chowk Taman Gita",color:"#2e7d32"},
+  {name:"ODC at Bali Tarantula Adventure",color:"#7b2d8b"},
+  {name:"ODC at Bali Safari",color:"#c07000"},
+  {name:"Other",            color:"#888"},
+];
+const VENUE_COLOR=Object.fromEntries(VENUES.map(v=>[v.name,v.color]));
+const TIMES=["Lunch","Dinner","Hi Tea","Gala Dinner","Breakfast","Other"];
+const STATUSES=["","New","Confirmed","Cancelled","Pending"];
+const MENUS=["Custom Menu","V1/NV1","V2/NV2","V3/NV2","V4","V5/NV5","Other"];
+
+let bookings=[];
+let cur=new Date();cur.setDate(1);
+let view="cal";
+let editingId=null;
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const pad=n=>String(n).padStart(2,"0");
+const fmtDate=d=>{if(!d)return"";const[y,m,da]=d.split("-");return`${da} ${m} ${y}`};
+const toISO=d=>d?d.toISOString().slice(0,10):"";
+const esc=s=>(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const totalPax=b=>(+b.adult||0)+(+b.child||0)+(+b.foc||0);
+const venueColor=v=>VENUE_COLOR[v]||"#888";
+
+async function loadAll(){
+  const{data:rows,error}=await sb.from("groups").select("data").order("updated_at",{ascending:false});
+  if(error){alert("Load failed: "+error.message);return}
+  bookings=(rows||[]).map(r=>r.data);
+  render();
+}
+async function upsert(b){await sb.from("groups").upsert({id:b.id,data:b})}
+async function del(id){bookings=bookings.filter(x=>x.id!==id);await sb.from("groups").delete().eq("id",id);render()}
+
+function render(){
+  renderSummary();renderLegend();
+  document.getElementById("monthLabel").textContent=cur.toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+  const main=document.getElementById("main");
+  main.innerHTML="";
+  if(view==="cal")renderCal(main);else renderList(main);
+}
+
+function monthBookings(){
+  const y=cur.getFullYear(),m=pad(cur.getMonth()+1);
+  return bookings.filter(b=>b.date&&b.date.startsWith(`${y}-${m}`));
+}
+function renderSummary(){
+  const mb=monthBookings();
+  const pax=mb.reduce((a,b)=>a+totalPax(b),0);
+  const venues=[...new Set(mb.map(b=>b.venue))].length;
+  const agents=[...new Set(mb.map(b=>b.company).filter(Boolean))].length;
+  document.getElementById("summaryBar").innerHTML=`
+    <div class="stat"><div class="val">${mb.length}</div><div class="lbl">Bookings</div></div>
+    <div class="stat"><div class="val">${pax}</div><div class="lbl">Total Pax</div></div>
+    <div class="stat"><div class="val">${agents}</div><div class="lbl">Travel Agents</div></div>
+    <div class="stat"><div class="val">${venues}</div><div class="lbl">Venues</div></div>`;
+}
+function renderLegend(){
+  document.getElementById("legend").innerHTML=VENUES.map(v=>
+    `<div class="legend-item"><div class="dot" style="background:${v.color}"></div>${v.name}</div>`
+  ).join("");
+}
+
+function renderCal(root){
+  const y=cur.getFullYear(),m=cur.getMonth();
+  const today=toISO(new Date());
+  const firstDay=new Date(y,m,1).getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const byDay={};
+  bookings.forEach(b=>{if(b.date)(byDay[b.date]=byDay[b.date]||[]).push(b)});
+
+  const wrap=document.createElement("div");wrap.className="cal";
+  const grid=document.createElement("div");grid.className="cal-grid";
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d=>{
+    const h=document.createElement("div");h.className="cal-hdr";h.textContent=d;grid.appendChild(h);
+  });
+  for(let i=0;i<firstDay;i++){const e=document.createElement("div");e.className="cal-day empty";grid.appendChild(e)}
+  for(let d=1;d<=daysInMonth;d++){
+    const iso=`${y}-${pad(m+1)}-${pad(d)}`;
+    const cell=document.createElement("div");
+    cell.className="cal-day"+(iso===today?" today":"");
+    const dayBks=(byDay[iso]||[]).sort((a,b)=>a.time.localeCompare(b.time));
+    const pax=dayBks.reduce((a,b)=>a+totalPax(b),0);
+    cell.innerHTML=`<div class="day-num">${d}</div><div class="pills">${
+      dayBks.slice(0,3).map(b=>`<div class="pill-row" style="background:${venueColor(b.venue)}" title="${esc(b.company)} — ${b.time}">${esc(b.company||b.groupCode||"Booking")}</div>`).join("")
+      }${dayBks.length>3?`<div style="font-size:9px;color:#999;margin-top:1px">+${dayBks.length-3} more</div>`:""}</div>
+      ${pax?`<div class="pax-total">${pax} pax</div>`:""}`;
+    cell.onclick=()=>openDay(iso,dayBks);
+    grid.appendChild(cell);
+  }
+  wrap.appendChild(grid);root.appendChild(wrap);
+}
+
+function renderList(root){
+  const mb=monthBookings().slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const wrap=document.createElement("div");wrap.className="list-view";
+  wrap.innerHTML=`<table>
+    <thead><tr>
+      <th>Date</th><th>Time</th><th>Company</th><th>Group</th>
+      <th>Venue</th><th>Menu</th><th>Adult</th><th>Child</th><th>FOC</th><th>Status</th><th></th>
+    </tr></thead>
+    <tbody>${mb.map(b=>`<tr>
+      <td>${fmtDate(b.date)}</td>
+      <td>${esc(b.time)}</td>
+      <td>${esc(b.company)}</td>
+      <td>${esc(b.groupCode)}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${venueColor(b.venue)};flex-shrink:0"></span>${esc(b.venue)}</span></td>
+      <td>${esc(b.description)}</td>
+      <td style="text-align:center">${b.adult||""}</td>
+      <td style="text-align:center">${b.child||""}</td>
+      <td style="text-align:center">${b.foc||""}</td>
+      <td>${b.status?`<span class="badge new">${esc(b.status)}</span>`:""}</td>
+      <td style="white-space:nowrap">
+        <button class="ghost" style="padding:3px 8px;font-size:11px" onclick="openEdit('${b.id}')">Edit</button>
+        <button class="ghost" style="padding:3px 8px;font-size:11px;color:#c0392b" onclick="if(confirm('Delete?'))delBook('${b.id}')">×</button>
+      </td>
+    </tr>`).join("")||`<tr><td colspan="11" style="text-align:center;color:#aaa;padding:30px">No bookings this month</td></tr>`}
+    </tbody></table>`;
+  root.appendChild(wrap);
+}
+
+function openDay(iso,dayBks){
+  const dlg=document.getElementById("dayDialog");
+  dlg.innerHTML=`<h2>${fmtDate(iso)}</h2>
+    <p class="sub">${dayBks.length} booking${dayBks.length!==1?"s":""} · ${dayBks.reduce((a,b)=>a+totalPax(b),0)} pax total</p>
+    <div id="dayList">${dayBks.length?dayBks.map(b=>`
+      <div class="day-booking">
+        <div class="venue-bar" style="background:${venueColor(b.venue)}"></div>
+        <div class="db-main">
+          <div class="db-title">${esc(b.company)}${b.groupCode?` <span style="font-weight:400;color:#888">· ${esc(b.groupCode)}</span>`:""}
+            ${b.status?`<span class="badge new" style="margin-left:6px">${esc(b.status)}</span>`:""}
+          </div>
+          <div class="db-meta">
+            <span>🕐 ${esc(b.time)}</span>
+            <span>📍 ${esc(b.venue)}</span>
+            <span>🍽 ${esc(b.description)}</span>
+          </div>
+          <div class="db-pax">👥 ${b.adult||0} adults${b.child?` · ${b.child} children`:""}${b.foc?` · ${b.foc} FOC`:""}</div>
+          ${b.notes?`<div style="font-size:11px;color:#888;margin-top:4px">${esc(b.notes)}</div>`:""}
+        </div>
+        <div class="db-actions">
+          <button class="ghost" onclick="openEdit('${b.id}')">Edit</button>
+          <button style="background:#c0392b" onclick="if(confirm('Delete?')){delBook('${b.id}');document.getElementById('dayModal').classList.remove('show')}">×</button>
+        </div>
+      </div>`).join(""):`<p style="color:#aaa;text-align:center;padding:20px">No bookings</p>`}</div>
+    <div class="dlg-actions">
+      <button class="ghost" onclick="document.getElementById('dayModal').classList.remove('show')">Close</button>
+      <button onclick="document.getElementById('dayModal').classList.remove('show');openAdd('${iso}')">+ Add Booking</button>
+    </div>`;
+  document.getElementById("dayModal").classList.add("show");
+}
+
+function openAdd(prefillDate=""){editingId=null;renderForm(null,prefillDate)}
+function openEdit(id){editingId=id;const b=bookings.find(x=>x.id===id);renderForm(b)}
+function renderForm(b,prefillDate=""){
+  const dlg=document.getElementById("formDialog");
+  const v=b||{id:"",company:"",groupCode:"",date:prefillDate,time:"Lunch",venue:"The Chowk Ubud",description:"",adult:"",child:"",foc:"",status:"",notes:""};
+  dlg.innerHTML=`<h2>${b?"Edit Booking":"New Booking"}</h2>
+    <div class="row">
+      <div><label>Company / Travel Agent</label><input id="f_company" value="${esc(v.company)}"/></div>
+      <div><label>Group Name / Code</label><input id="f_groupCode" value="${esc(v.groupCode)}"/></div>
+    </div>
+    <div class="row">
+      <div><label>Date</label><input type="date" id="f_date" value="${v.date||""}"/></div>
+      <div><label>Time / Meal</label><select id="f_time">${TIMES.map(t=>`<option ${t===v.time?"selected":""}>${t}</option>`).join("")}</select></div>
+    </div>
+    <label>Venue</label><select id="f_venue">${VENUES.map(vn=>`<option ${vn.name===v.venue?"selected":""}>${vn.name}</option>`).join("")}</select>
+    <label>Menu / Description</label><select id="f_desc">${MENUS.map(m=>`<option ${m===v.description?"selected":""}>${m}</option>`).join("")}</select>
+    <label>Pax</label>
+    <div class="pax-row">
+      <div><label>Adult</label><input type="number" id="f_adult" value="${v.adult||""}" min="0"/></div>
+      <div><label>Child</label><input type="number" id="f_child" value="${v.child||""}" min="0"/></div>
+      <div><label>FOC</label><input type="number" id="f_foc" value="${v.foc||""}" min="0"/></div>
+    </div>
+    <label>Booking Status</label><select id="f_status">${STATUSES.map(s=>`<option ${s===v.status?"selected":""}>${s}</option>`).join("")}</select>
+    <label>Notes</label><textarea id="f_notes" rows="2">${esc(v.notes)}</textarea>
+    <div class="dlg-actions">
+      ${b?`<button style="background:#c0392b;margin-right:auto" onclick="if(confirm('Delete?')){delBook('${b.id}');document.getElementById('formModal').classList.remove('show')}">Delete</button>`:""}
+      <button class="ghost" onclick="document.getElementById('formModal').classList.remove('show')">Cancel</button>
+      <button onclick="saveForm()">Save</button>
+    </div>`;
+  document.getElementById("formModal").classList.add("show");
+}
+async function saveForm(){
+  const g=id=>document.getElementById(id).value;
+  const existing=editingId?bookings.find(x=>x.id===editingId):null;
+  const b={
+    id:existing?existing.id:uid(),
+    company:g("f_company"),groupCode:g("f_groupCode"),
+    date:g("f_date"),time:g("f_time"),venue:g("f_venue"),
+    description:g("f_desc"),adult:g("f_adult"),child:g("f_child"),foc:g("f_foc"),
+    status:g("f_status"),notes:g("f_notes")
+  };
+  if(existing){const i=bookings.indexOf(existing);bookings[i]=b}else bookings.push(b);
+  await upsert(b);
+  document.getElementById("formModal").classList.remove("show");
+  render();
+}
+async function delBook(id){bookings=bookings.filter(x=>x.id!==id);await sb.from("groups").delete().eq("id",id);render()}
+
+// nav
+document.getElementById("prevBtn").onclick=()=>{cur.setMonth(cur.getMonth()-1);render()};
+document.getElementById("nextBtn").onclick=()=>{cur.setMonth(cur.getMonth()+1);render()};
+document.querySelectorAll("#viewToggle button").forEach(b=>b.onclick=()=>{
+  view=b.dataset.v;
+  document.querySelectorAll("#viewToggle button").forEach(x=>x.classList.toggle("active",x===b));
+  render();
+});
+document.getElementById("dayModal").onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove("show")};
+document.getElementById("formModal").onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove("show")};
+
+Object.assign(window,{openAdd,openEdit,delBook,saveForm});
+loadAll();
+</script>
+</body>
+</html>
