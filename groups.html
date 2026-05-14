@@ -154,6 +154,7 @@ const MENUS=["Custom Menu","V1/NV1","V2/NV2","V3/NV2","V4","V5/NV5","Other"];
 let bookings=[];
 let cur=new Date();cur.setDate(1);
 let view="cal";
+let showAll=false;
 let editingId=null;
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -163,6 +164,7 @@ const toISO=d=>d?d.toISOString().slice(0,10):"";
 const esc=s=>(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const totalPax=b=>(+b.adult||0)+(+b.child||0)+(+b.foc||0);
 const venueColor=v=>VENUE_COLOR[v]||"#888";
+const venueLabel=b=>b.venue==="Other"&&b.customVenue?b.customVenue:b.venue;
 
 async function loadAll(){
   const{data:rows,error}=await sb.from("groups").select("data").order("updated_at",{ascending:false});
@@ -233,19 +235,23 @@ function renderCal(root){
 }
 
 function renderList(root){
-  const mb=monthBookings().slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const source=(showAll?bookings:monthBookings()).slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   const wrap=document.createElement("div");wrap.className="list-view";
-  wrap.innerHTML=`<table>
+  wrap.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span style="font-size:13px;color:#777">${source.length} booking${source.length!==1?"s":""} · ${source.reduce((a,b)=>a+totalPax(b),0)} pax</span>
+    <button class="ghost" style="font-size:12px;padding:5px 12px" onclick="showAll=!showAll;render()">${showAll?"Show this month only":"Show all months"}</button>
+  </div>
+  <table>
     <thead><tr>
       <th>Date</th><th>Time</th><th>Company</th><th>Group</th>
       <th>Venue</th><th>Menu</th><th>Adult</th><th>Child</th><th>FOC</th><th>Status</th><th></th>
     </tr></thead>
-    <tbody>${mb.map(b=>`<tr>
+    <tbody>${source.map(b=>`<tr>
       <td>${fmtDate(b.date)}</td>
       <td>${esc(b.time)}</td>
       <td>${esc(b.company)}</td>
       <td>${esc(b.groupCode)}</td>
-      <td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${venueColor(b.venue)};flex-shrink:0"></span>${esc(b.venue)}</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${venueColor(b.venue)};flex-shrink:0"></span>${esc(venueLabel(b))}</span></td>
       <td>${esc(b.description)}</td>
       <td style="text-align:center">${b.adult||""}</td>
       <td style="text-align:center">${b.child||""}</td>
@@ -256,7 +262,8 @@ function renderList(root){
         <button class="ghost" style="padding:3px 8px;font-size:11px;color:#c0392b" onclick="if(confirm('Delete?'))delBook('${b.id}')">×</button>
       </td>
     </tr>`).join("")||`<tr><td colspan="11" style="text-align:center;color:#aaa;padding:30px">No bookings this month</td></tr>`}
-    </tbody></table>`;
+    </tbody></table>
+  `;
   root.appendChild(wrap);
 }
 
@@ -273,7 +280,7 @@ function openDay(iso,dayBks){
           </div>
           <div class="db-meta">
             <span>🕐 ${esc(b.time)}</span>
-            <span>📍 ${esc(b.venue)}</span>
+            <span>📍 ${esc(venueLabel(b))}</span>
             <span>🍽 ${esc(b.description)}</span>
           </div>
           <div class="db-pax">👥 ${b.adult||0} adults${b.child?` · ${b.child} children`:""}${b.foc?` · ${b.foc} FOC`:""}</div>
@@ -305,7 +312,8 @@ function renderForm(b,prefillDate=""){
       <div><label>Date</label><input type="date" id="f_date" value="${v.date||""}"/></div>
       <div><label>Time / Meal</label><select id="f_time">${TIMES.map(t=>`<option ${t===v.time?"selected":""}>${t}</option>`).join("")}</select></div>
     </div>
-    <label>Venue</label><select id="f_venue">${VENUES.map(vn=>`<option ${vn.name===v.venue?"selected":""}>${vn.name}</option>`).join("")}</select>
+    <label>Venue</label><select id="f_venue" onchange="document.getElementById('f_venueCustomWrap').style.display=this.value==='Other'?'block':'none'">${VENUES.map(vn=>`<option ${vn.name===v.venue?"selected":""}>${vn.name}</option>`).join("")}</select>
+    <div id="f_venueCustomWrap" style="display:${v.venue==='Other'?'block':'none'}"><input id="f_venueCustom" placeholder="Enter venue name…" value="${esc(v.customVenue||'')}" style="margin-top:6px"/></div>
     <label>Menu / Description</label><select id="f_desc">${MENUS.map(m=>`<option ${m===v.description?"selected":""}>${m}</option>`).join("")}</select>
     <label>Pax</label>
     <div class="pax-row">
@@ -325,10 +333,13 @@ function renderForm(b,prefillDate=""){
 async function saveForm(){
   const g=id=>document.getElementById(id).value;
   const existing=editingId?bookings.find(x=>x.id===editingId):null;
+  const venueVal=g("f_venue");
   const b={
     id:existing?existing.id:uid(),
     company:g("f_company"),groupCode:g("f_groupCode"),
-    date:g("f_date"),time:g("f_time"),venue:g("f_venue"),
+    date:g("f_date"),time:g("f_time"),
+    venue:venueVal,
+    customVenue:venueVal==="Other"?(g("f_venueCustom")||""):"",
     description:g("f_desc"),adult:g("f_adult"),child:g("f_child"),foc:g("f_foc"),
     status:g("f_status"),notes:g("f_notes")
   };
