@@ -51,6 +51,7 @@ textarea{min-height:60px;resize:vertical}
 <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-right:6px">
   <button id="vPipeline" style="background:var(--accent);color:#fff;border:0;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:0" onclick="setView('pipeline')">Pipeline</button>
   <button id="vMonthly" style="background:#fff;color:#555;border:0;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:0" onclick="setView('monthly')">Monthly</button>
+  <button id="vDeposits" style="background:#fff;color:#555;border:0;border-left:1px solid var(--border);padding:6px 12px;font-size:12px;cursor:pointer;border-radius:0" onclick="setView('deposits')">Deposits</button>
 </div>
 <button onclick="openClient()">+ New Client</button>
 <button class="ghost" onclick="exportData()">Export</button>
@@ -127,10 +128,11 @@ function daysSince(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d))/
 
 function setView(v){
   crmView=v;
-  document.getElementById("vPipeline").style.background=v==="pipeline"?"var(--accent)":"#fff";
-  document.getElementById("vPipeline").style.color=v==="pipeline"?"#fff":"#555";
-  document.getElementById("vMonthly").style.background=v==="monthly"?"var(--accent)":"#fff";
-  document.getElementById("vMonthly").style.color=v==="monthly"?"#fff":"#555";
+  [["vPipeline","pipeline"],["vMonthly","monthly"],["vDeposits","deposits"]].forEach(([id,val])=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.style.background=v===val?"var(--accent)":"#fff";
+    el.style.color=v===val?"#fff":"#555";
+  });
   render();
 }
 window.setView=setView;
@@ -141,6 +143,7 @@ function render(){
   board.style.flexDirection="";board.style.flexWrap="";board.style.padding="";board.style.gap="";board.style.overflow="";
   const sb=document.getElementById("summaryBar");
   if(crmView==="monthly"){sb.style.display="none";renderMonthly(board);renderAlerts();return;}
+  if(crmView==="deposits"){sb.style.display="none";renderDeposits(board);return;}
   // pipeline summary bar
   const active=data.clients.filter(c=>c.stage!=="Lost"&&c.stage!=="Completed");
   const pipelineVal=active.reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
@@ -171,6 +174,70 @@ function render(){
     board.appendChild(col);
   });
   renderAlerts();
+}
+
+function renderDeposits(board){
+  board.style.flexDirection="column";board.style.flexWrap="nowrap";board.style.padding="16px 20px";board.style.gap="12px";board.style.overflow="auto";
+  const confirmed=data.clients.filter(c=>c.stage==="Confirmed"||c.stage==="Completed")
+    .slice().sort((a,b)=>{
+      const da=(a.events||[]).map(e=>e.date).filter(Boolean).sort()[0]||"";
+      const db=(b.events||[]).map(e=>e.date).filter(Boolean).sort()[0]||"";
+      return da.localeCompare(db);
+    });
+  const totalVal=confirmed.reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+  const totalDep=confirmed.reduce((a,c)=>a+(parseFloat(c.deposit?.amount)||0),0);
+  const outstanding=Math.max(0,totalVal-totalDep);
+  const pills=document.createElement("div");
+  pills.style.cssText="display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0";
+  const mkPill=(label,val,color)=>`<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:12px;color:#777;line-height:1.4"><span>${label}</span><div style="font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;color:${color}">${val}</div></div>`;
+  pills.innerHTML=mkPill("Total Confirmed Value",`IDR ${totalVal.toFixed(1)}mn`,"#222")+mkPill("Deposits Received",`IDR ${totalDep.toFixed(1)}mn`,"var(--ok)")+mkPill("Outstanding",`IDR ${outstanding.toFixed(1)}mn`,"var(--warn)")+mkPill("Clients",confirmed.length,"#1565c0");
+  board.appendChild(pills);
+  if(!confirmed.length){
+    const empty=document.createElement("div");empty.style.cssText="text-align:center;padding:40px;color:#aaa;font-size:13px";empty.textContent="No confirmed or completed events yet.";board.appendChild(empty);return;
+  }
+  const depStatus=(c)=>{
+    const val=parseFloat(c.estValue)||0,dep=parseFloat(c.deposit?.amount)||0;
+    if(dep<=0)return["Awaiting","#ffeaea","var(--warn)"];
+    if(dep<val)return["Partial","#fff8e1","#b37700"];
+    return["Paid in Full","#e8f5e9","var(--ok)"];
+  };
+  const wrap=document.createElement("div");wrap.style.cssText="overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:#fff;flex-shrink:0";
+  const rows=confirmed.map(c=>{
+    const val=parseFloat(c.estValue)||0,dep=parseFloat(c.deposit?.amount)||0,bal=val-dep;
+    const [sl,sbg,sc]=depStatus(c);
+    const evs=(c.events||[]).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+    const evText=evs.map(e=>`${e.type==="Other"&&e.customType?e.customType:e.type}${e.date?" · "+fmtDate(e.date):""}`).join("<br>");
+    return `<tr>
+      <td style="font-weight:600">${c.name||"(no name)"}<div style="font-size:10px;font-weight:400;margin-top:2px;color:${c.stage==="Completed"?"#1565c0":"var(--ok)"}">● ${c.stage}</div></td>
+      <td style="font-size:12px;color:#777">${c.agent||"—"}</td>
+      <td style="font-size:12px;line-height:1.7">${evText||"—"}</td>
+      <td style="font-weight:600;font-variant-numeric:tabular-nums">${val?val.toFixed(1):"—"}</td>
+      <td><input type="number" min="0" step="0.1" placeholder="0.0" value="${dep||""}" style="width:85px;border:1px solid var(--border);border-radius:5px;padding:5px 7px;font-size:13px;font-variant-numeric:tabular-nums" data-cid="${c.id}" data-f="amount" oninput="window._depChange(this)"/></td>
+      <td><input type="date" value="${c.deposit?.date||""}" style="width:130px;border:1px solid var(--border);border-radius:5px;padding:5px 7px;font-size:12px" data-cid="${c.id}" data-f="date" oninput="window._depChange(this)"/></td>
+      <td style="font-weight:700;font-variant-numeric:tabular-nums;color:${bal<=0?"var(--ok)":"var(--warn)"}">${val?(bal<=0?"✓":"IDR "+bal.toFixed(1)+"mn"):"—"}</td>
+      <td><span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:${sbg};color:${sc};text-transform:uppercase;letter-spacing:.04em">${sl}</span></td>
+      <td><input type="text" placeholder="Note…" value="${(c.deposit?.note||"").replace(/"/g,"&quot;")}" style="width:150px;border:1px solid var(--border);border-radius:5px;padding:5px 7px;font-size:12px;color:#777" data-cid="${c.id}" data-f="note" oninput="window._depChange(this)"/></td>
+    </tr>`;
+  }).join("");
+  wrap.innerHTML=`<table style="border-collapse:collapse;width:100%;min-width:860px;font-size:13px">
+    <thead><tr style="background:var(--bg)">${["Client","Agent","Events","Est. Value (mn)","Deposit Received (mn)","Deposit Date","Balance","Status","Notes"].map(h=>`<th style="padding:9px 13px;text-align:left;font-size:10px;font-weight:700;color:#999;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap">${h}</th>`).join("")}</tr></thead>
+    <tbody>${rows}</tbody></table>`;
+  board.appendChild(wrap);
+  let depTimer=null;
+  window._depChange=(input)=>{
+    const cid=input.dataset.cid,field=input.dataset.f;
+    const c=data.clients.find(x=>x.id===cid);if(!c)return;
+    if(!c.deposit)c.deposit={};
+    c.deposit[field]=field==="amount"?(input.value===""?"":parseFloat(input.value)||0):input.value;
+    dirty.add(cid);
+    const tr=input.closest("tr");
+    const val=parseFloat(c.estValue)||0,dep=parseFloat(c.deposit?.amount)||0,bal=val-dep;
+    const balEl=tr.children[6];
+    if(balEl){balEl.innerHTML=val?(bal<=0?"✓":"IDR "+bal.toFixed(1)+"mn"):"—";balEl.style.color=bal<=0?"var(--ok)":"var(--warn)";}
+    const [nsl,nsbg,nsc]=depStatus(c);
+    const pillEl=tr.querySelector("span[style]");if(pillEl){pillEl.textContent=nsl;pillEl.style.background=nsbg;pillEl.style.color=nsc;}
+    clearTimeout(depTimer);depTimer=setTimeout(flush,500);
+  };
 }
 
 function renderAlerts(){
@@ -218,23 +285,26 @@ function renderMonthly(board){
     const key=`${y}-${String(m+1).padStart(2,"0")}`;
     const clients=data.clients.filter(c=>(c.events||[]).some(e=>e.date&&e.date.startsWith(key)));
     const totalVal=clients.reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
-    const confirmedVal=clients.filter(c=>c.stage==="Confirmed"||c.stage==="Completed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+    const completedVal=clients.filter(c=>c.stage==="Completed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+    const confirmedVal=clients.filter(c=>c.stage==="Confirmed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+    const pipelineVal=totalVal-confirmedVal-completedVal;
 
     const TARGET=600;
-    const pendingVal=totalVal-confirmedVal;
-    const confirmedPct=Math.min(100,confirmedVal/TARGET*100);
-    const pendingPct=Math.min(100-confirmedPct,pendingVal/TARGET*100);
+    const completedPct=Math.min(100,completedVal/TARGET*100);
+    const confirmedPct=Math.min(100-completedPct,confirmedVal/TARGET*100);
+    const pipelinePct=Math.min(100-completedPct-confirmedPct,pipelineVal/TARGET*100);
     const overTarget=totalVal>TARGET;
 
     const col=document.createElement("div");col.className="col";col.style.minWidth="220px";col.style.width="220px";col.style.flexShrink="0";
     col.innerHTML=`<h3 style="flex-direction:column;align-items:flex-start;gap:4px">
       <span>${MONTHS[m]} ${y}</span>
       <div style="width:100%;height:8px;background:#e8e5de;border-radius:4px;overflow:hidden;display:flex">
-        <div style="width:${confirmedPct}%;background:#2e7d32;height:100%;transition:width .3s"></div>
-        <div style="width:${pendingPct}%;background:#f9a825;height:100%;transition:width .3s"></div>
+        <div style="width:${completedPct}%;background:#1565c0;height:100%" title="Completed"></div>
+        <div style="width:${confirmedPct}%;background:#2e7d32;height:100%" title="Confirmed"></div>
+        <div style="width:${pipelinePct}%;background:#f9a825;height:100%" title="Pipeline"></div>
       </div>
       <span style="font-size:10px;font-weight:400;color:${overTarget?"#b71c1c":"#666"}">
-        IDR ${totalVal.toFixed(0)}mn / 600mn${confirmedVal?` · ${confirmedVal.toFixed(0)}mn confirmed`:""}
+        IDR ${totalVal.toFixed(0)}mn / 600mn${completedVal?` · <span style="color:#1565c0">${completedVal.toFixed(0)} done</span>`:""}${confirmedVal?` · <span style="color:#2e7d32">${confirmedVal.toFixed(0)} conf</span>`:""}
       </span>
     </h3>`;
 
