@@ -224,7 +224,16 @@ function renderActive(root){
       const warn=document.createElement("div");warn.style.cssText="font-size:10px;color:#b37700;margin:4px 2px;text-transform:uppercase";warn.textContent=`⚠ ${openCount}/${ACTIVE_CAP} cap — cull or complete`;
       col.appendChild(warn);
     }
-    others.forEach(t=>col.appendChild(todoEl(t)));
+    const oneOff=others.filter(t=>!t.recurring);
+    const recurring=others.filter(t=>t.recurring);
+    oneOff.forEach(t=>col.appendChild(todoEl(t)));
+    if(oneOff.length&&recurring.length){
+      const sep=document.createElement("div");
+      sep.style.cssText="display:flex;align-items:center;gap:6px;margin:8px 2px 4px;";
+      sep.innerHTML=`<div style="flex:1;height:1px;background:#ddd"></div><span style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#aaa;white-space:nowrap">Recurring</span><div style="flex:1;height:1px;background:#ddd"></div>`;
+      col.appendChild(sep);
+    }
+    recurring.forEach(t=>col.appendChild(todoEl(t)));
 
     board.appendChild(col);
     // bind input
