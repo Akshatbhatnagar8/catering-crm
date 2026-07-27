@@ -144,9 +144,10 @@ function render(){
   // pipeline summary bar
   const active=data.clients.filter(c=>c.stage!=="Lost"&&c.stage!=="Completed");
   const pipelineVal=active.reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
-  const confirmedVal=data.clients.filter(c=>c.stage==="Confirmed"||c.stage==="Completed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+  const confirmedVal=data.clients.filter(c=>c.stage==="Confirmed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+  const completedVal=data.clients.filter(c=>c.stage==="Completed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
   sb.style.display="flex";
-  sb.innerHTML=`<span>Pipeline: <strong>IDR ${pipelineVal.toFixed(1)}mn</strong></span><span style="color:#2e7d32">Confirmed: <strong>IDR ${confirmedVal.toFixed(1)}mn</strong></span>`;
+  sb.innerHTML=`<span>Pipeline: <strong>IDR ${pipelineVal.toFixed(1)}mn</strong></span><span style="color:#2e7d32">Confirmed: <strong>IDR ${confirmedVal.toFixed(1)}mn</strong></span><span style="color:#1565c0">Completed: <strong>IDR ${completedVal.toFixed(1)}mn</strong></span>`;
   STAGES.forEach(s=>{
     const col=document.createElement("div");col.className="col";
     const list=data.clients.filter(c=>c.stage===s);
