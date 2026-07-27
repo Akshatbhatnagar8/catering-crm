@@ -47,7 +47,11 @@ textarea{min-height:60px;resize:vertical}
 <body>
 <header>
 <a href="/home.html" style="color:#b8541a;text-decoration:none;font-size:20px;margin-right:4px" title="Home">⌂</a>
-<h1 style="font-size:16px">💍 Weddings & Events</h1>
+<h1 style="font-size:16px;flex:1">💍 Weddings & Events</h1>
+<div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-right:6px">
+  <button id="vPipeline" style="background:var(--accent);color:#fff;border:0;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:0" onclick="setView('pipeline')">Pipeline</button>
+  <button id="vMonthly" style="background:#fff;color:#555;border:0;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:0" onclick="setView('monthly')">Monthly</button>
+</div>
 <button onclick="openClient()">+ New Client</button>
 <button class="ghost" onclick="exportData()">Export</button>
 <button class="ghost" onclick="document.getElementById('imp').click()">Import</button>
@@ -89,6 +93,7 @@ const SLA={"Lead from Agent":2,"Tasting Scheduled":1,"Tasting Completed":2,"Samp
 let data={clients:[]};
 let editingId=null,activeTab="details";
 let saveTimer=null;
+let crmView="pipeline";
 const dirty=new Set();
 const deleted=new Set();
 
@@ -118,8 +123,19 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function today(){return new Date().toISOString().slice(0,10)}
 function daysSince(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d))/86400000)}
 
+function setView(v){
+  crmView=v;
+  document.getElementById("vPipeline").style.background=v==="pipeline"?"var(--accent)":"#fff";
+  document.getElementById("vPipeline").style.color=v==="pipeline"?"#fff":"#555";
+  document.getElementById("vMonthly").style.background=v==="monthly"?"var(--accent)":"#fff";
+  document.getElementById("vMonthly").style.color=v==="monthly"?"#fff":"#555";
+  render();
+}
+window.setView=setView;
+
 function render(){
   const board=document.getElementById("board");board.innerHTML="";
+  if(crmView==="monthly"){renderMonthly(board);renderAlerts();return;}
   STAGES.forEach(s=>{
     const col=document.createElement("div");col.className="col";
     const list=data.clients.filter(c=>c.stage===s);
@@ -132,7 +148,7 @@ function render(){
       const div=document.createElement("div");div.className=cls;
       const summ=eventSummary(c);
       const totalPax=(c.events||[]).reduce((a,e)=>a+(parseInt(e.headcount)||0),0);
-      div.innerHTML=`<div class="name">${c.name||"(no name)"}${c.estValue?`<span style="float:right;font-size:11px;font-weight:700;color:#2e7d32">₹${c.estValue}mn</span>`:""}</div>
+      div.innerHTML=`<div class="name">${c.name||"(no name)"}${c.estValue?`<span style="float:right;font-size:11px;font-weight:700;color:#2e7d32">IDR ${c.estValue}mn</span>`:""}</div>
         ${summ?`<div style="font-size:11px;color:#666">📅 ${summ.range} ${totalPax?"• "+totalPax+" pax":""}</div>
         <div style="font-size:11px;color:#888;margin-top:2px">${summ.count} event${summ.count>1?"s":""}: ${summ.types}</div>`:""}
         <div class="meta"><span>${c.agent||"—"}</span><span>${days}d in stage</span></div>
@@ -142,13 +158,52 @@ function render(){
     });
     board.appendChild(col);
   });
-  // alerts
-  const stale=data.clients.filter(c=>daysSince(c.stageSince)>SLA[c.stage]&&c.stage!=="Confirmed"&&c.stage!=="Lost");
+  renderAlerts();
+}
+
+function renderAlerts(){
+  const stale=data.clients.filter(c=>daysSince(c.stageSince)>SLA[c.stage]&&c.stage!=="Confirmed"&&c.stage!=="Lost"&&c.stage!=="Completed");
   const dueRem=data.clients.filter(c=>c.reminder&&c.reminder<=today());
   const ab=document.getElementById("alertBox");
   if(stale.length||dueRem.length){
     ab.innerHTML=`<div class="alerts"><b>Attention:</b> ${dueRem.length} reminder(s) due today, ${stale.length} client(s) stale beyond stage SLA.</div>`;
   } else ab.innerHTML="";
+}
+
+function renderMonthly(board){
+  const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const now=new Date();
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const y=d.getFullYear(),m=d.getMonth();
+    const key=`${y}-${String(m+1).padStart(2,"0")}`;
+    // clients with at least one event in this month
+    const clients=data.clients.filter(c=>(c.events||[]).some(e=>e.date&&e.date.startsWith(key)));
+    const totalVal=clients.reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+    const confirmedVal=clients.filter(c=>c.stage==="Confirmed"||c.stage==="Completed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+
+    const col=document.createElement("div");col.className="col";col.style.minWidth="220px";col.style.width="220px";
+    col.innerHTML=`<h3 style="flex-direction:column;align-items:flex-start;gap:2px">
+      <span>${MONTHS[m]} ${y}</span>
+      <span style="font-size:10px;font-weight:400;color:#2e7d32;background:#e8f5e9;border-radius:8px;padding:1px 7px;margin-top:2px">
+        IDR ${totalVal.toFixed(1)}mn total${confirmedVal?"  ·  "+confirmedVal.toFixed(1)+"mn confirmed":""}
+      </span>
+    </h3>`;
+
+    if(!clients.length){
+      const empty=document.createElement("div");empty.style.cssText="font-size:12px;color:#bbb;padding:10px 4px";empty.textContent="No events";col.appendChild(empty);
+    }
+    clients.forEach(c=>{
+      const evs=(c.events||[]).filter(e=>e.date&&e.date.startsWith(key)).map(e=>e.type==="Other"&&e.customType?e.customType:e.type).join(", ");
+      const div=document.createElement("div");div.className="card";div.style.cursor="pointer";
+      div.innerHTML=`<div class="name">${c.name||"(no name)"}${c.estValue?`<span style="float:right;font-size:11px;font-weight:700;color:#2e7d32">IDR ${c.estValue}mn</span>`:""}</div>
+        <div style="font-size:11px;color:#888;margin-top:3px">${evs}</div>
+        <div class="meta"><span style="color:#555">${c.stage}</span><span>${c.agent||"—"}</span></div>`;
+      div.onclick=()=>openClient(c.id);
+      col.appendChild(div);
+    });
+    board.appendChild(col);
+  }
 }
 
 function openClient(id){
