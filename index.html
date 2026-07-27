@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>The Chowk - Sales Tool</title>
+<title>The Chowk - Weddings & Events</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
 :root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--warn:#c0392b;--ok:#2e7d32;--border:#e3e0d8}
@@ -47,7 +47,7 @@ textarea{min-height:60px;resize:vertical}
 <body>
 <header>
 <a href="/home.html" style="color:#b8541a;text-decoration:none;font-size:20px;margin-right:4px" title="Home">⌂</a>
-<h1 style="font-size:16px">💍 Wedding Pipeline</h1>
+<h1 style="font-size:16px">💍 Weddings & Events</h1>
 <button onclick="openClient()">+ New Client</button>
 <button class="ghost" onclick="exportData()">Export</button>
 <button class="ghost" onclick="document.getElementById('imp').click()">Import</button>
@@ -132,7 +132,7 @@ function render(){
       const div=document.createElement("div");div.className=cls;
       const summ=eventSummary(c);
       const totalPax=(c.events||[]).reduce((a,e)=>a+(parseInt(e.headcount)||0),0);
-      div.innerHTML=`<div class="name">${c.name||"(no name)"}</div>
+      div.innerHTML=`<div class="name">${c.name||"(no name)"}${c.estValue?`<span style="float:right;font-size:11px;font-weight:700;color:#2e7d32">₹${c.estValue}mn</span>`:""}</div>
         ${summ?`<div style="font-size:11px;color:#666">📅 ${summ.range} ${totalPax?"• "+totalPax+" pax":""}</div>
         <div style="font-size:11px;color:#888;margin-top:2px">${summ.count} event${summ.count>1?"s":""}: ${summ.types}</div>`:""}
         <div class="meta"><span>${c.agent||"—"}</span><span>${days}d in stage</span></div>
@@ -153,7 +153,7 @@ function render(){
 
 function openClient(id){
   editingId=id||null;activeTab="details";
-  const c=id?data.clients.find(x=>x.id===id):migrateClient({id:uid(),name:"",stage:STAGES[0],stageSince:today(),agent:"",phone:"",email:"",events:[],tastingNotes:"",reminder:"",reminderNote:"",log:[],files:[]});
+  const c=id?data.clients.find(x=>x.id===id):migrateClient({id:uid(),name:"",stage:STAGES[0],stageSince:today(),agent:"",phone:"",email:"",events:[],tastingNotes:"",reminder:"",reminderNote:"",estValue:"",log:[],files:[]});
   if(!id){data.clients.push(c);editingId=c.id;dirty.add(c.id)}
   renderDialog(c);
   document.getElementById("modal").classList.add("show");
@@ -192,8 +192,9 @@ function renderTab(c){
       <div class="row"><div><label>Phone</label><input id="f_phone" value="${c.phone||''}"/></div>
       <div><label>Email</label><input id="f_email" value="${c.email||''}"/></div></div>
       <label>Agent / Referrer</label><input id="f_agent" value="${c.agent||''}"/>
-      <label>Stage</label><select id="f_stage">${STAGES.map(s=>`<option ${s===c.stage?'selected':''}>${s}</option>`).join('')}</select>`;
-    ['name','phone','email','agent'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
+      <div class="row"><div><label>Stage</label><select id="f_stage">${STAGES.map(s=>`<option ${s===c.stage?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div><label>Est. Value (mn)</label><input id="f_estValue" type="number" step="0.1" min="0" placeholder="e.g. 1.5" value="${c.estValue||''}"/></div></div>`;
+    ['name','phone','email','agent','estValue'].forEach(f=>document.getElementById('f_'+f).oninput=e=>upd(f,e.target.value));
     document.getElementById('f_stage').onchange=e=>{upd('stage',e.target.value);renderTab(c)};
   }
   else if(activeTab==='events'){
