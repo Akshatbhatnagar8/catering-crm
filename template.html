@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>The Chowk — Import Template</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--warn:#c0392b;--ok:#2e7d32;--border:#e3e0d8}
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);min-height:100vh}
+header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+header h1{font-size:16px;flex:1;margin:0}
+button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+button:hover{opacity:.88}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
+.page{max-width:720px;margin:0 auto;padding:28px 20px 60px}
+.intro{margin-bottom:28px}
+.intro p{font-size:13px;color:var(--muted);line-height:1.65;margin-top:6px;max-width:520px}
+.section-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;margin-top:28px}
+/* Table preview */
+.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);background:#fff}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:12px}
+thead th{background:var(--bg);padding:8px 11px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap;font-family:"SF Mono",Menlo,monospace}
+thead th.req{color:var(--accent)}
+tbody td{padding:8px 11px;border-bottom:1px solid var(--border);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#fdf6f2}
+.stage{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:#fdf0e8;color:var(--accent);font-family:"SF Mono",Menlo,monospace}
+/* Note */
+.note{background:#fff8f4;border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:10px 14px;font-size:12px;color:var(--ink);margin-top:12px;line-height:1.6}
+/* Column guide */
+.col-guide{display:flex;flex-direction:column;gap:5px}
+.col-row{display:flex;align-items:baseline;gap:10px;padding:7px 11px;background:#fff;border:1px solid var(--border);border-radius:6px;font-size:12px}
+.col-name{font-family:"SF Mono",Menlo,monospace;font-size:10px;color:var(--accent);min-width:175px;flex-shrink:0}
+.col-desc{color:var(--muted);flex:1}
+.col-req{font-size:10px;color:var(--accent);font-weight:700;margin-left:auto;flex-shrink:0}
+.col-opt{font-size:10px;color:var(--muted);margin-left:auto;flex-shrink:0}
+/* Ref grid */
+.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.ref-grid{grid-template-columns:1fr}}
+.ref-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:13px 15px}
+.ref-card h3{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.ref-item{padding:4px 0;font-size:12px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:8px}
+.ref-item:last-child{border-bottom:none}
+.ref-item code{font-family:"SF Mono",Menlo,monospace;font-size:11px;color:var(--accent)}
+.ref-item .hint{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <a href="/home.html" style="color:var(--accent);text-decoration:none;font-size:20px;margin-right:4px" title="Home">⌂</a>
+  <h1>📋 Pipeline Import Template</h1>
+  <button onclick="downloadCSV()">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Download CSV
+  </button>
+</header>
+
+<div class="page">
+  <div class="intro">
+    <p>Fill in the CSV and send it back — one row per event. If a client has multiple events (e.g. Wedding + Mehendi), repeat their details across multiple rows with the same client name.</p>
+  </div>
+
+  <div class="section-label">Preview — sample rows</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="req">Client Name *</th>
+          <th>Phone</th>
+          <th>Agent</th>
+          <th class="req">Stage *</th>
+          <th>Est. Value (mn)</th>
+          <th class="req">Event Type *</th>
+          <th>Custom Type</th>
+          <th class="req">Event Date *</th>
+          <th>Headcount</th>
+          <th>Reminder Date</th>
+          <th>Reminder Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Sharma & Priya</strong></td>
+          <td>+62 812 1234 5678</td>
+          <td>Varawedding</td>
+          <td><span class="stage">Confirmed</span></td>
+          <td>2.5</td>
+          <td>Wedding</td>
+          <td></td>
+          <td>15 11 2026</td>
+          <td>220</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><strong>Sharma & Priya</strong></td>
+          <td>+62 812 1234 5678</td>
+          <td>Varawedding</td>
+          <td><span class="stage">Confirmed</span></td>
+          <td>2.5</td>
+          <td>Mehendi</td>
+          <td></td>
+          <td>13 11 2026</td>
+          <td>80</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><strong>Gupta Family</strong></td>
+          <td>+62 878 9999 0000</td>
+          <td>Direct</td>
+          <td><span class="stage">Tasting Scheduled</span></td>
+          <td>1.2</td>
+          <td>Other</td>
+          <td>Engagement Dinner</td>
+          <td>08 02 2027</td>
+          <td>60</td>
+          <td>30 07 2026</td>
+          <td>Follow up post tasting</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <strong>Client Name is the key</strong> — rows with the same name are grouped into one client card. Spelling must match exactly across rows.
+  </div>
+
+  <div class="section-label">Column guide</div>
+  <div class="col-guide">
+    <div class="col-row"><span class="col-name">Client Name</span><span class="col-desc">Full name as you'd use on an invoice</span><span class="col-req">required</span></div>
+    <div class="col-row"><span class="col-name">Phone</span><span class="col-desc">WhatsApp number with country code</span><span class="col-opt">optional</span></div>
+    <div class="col-row"><span class="col-name">Email</span><span class="col-desc">Client email address</span><span class="col-opt">optional</span></div>
+    <div class="col-row"><span class="col-name">Agent / Referrer</span><span class="col-desc">Agent name, or "Direct" if no agent</span><span class="col-opt">optional</span></div>
+    <div class="col-row"><span class="col-name">Stage</span><span class="col-desc">Must match exactly — see valid values below</span><span class="col-req">required</span></div>
+    <div class="col-row"><span class="col-name">Stage Since (DD MM YYYY)</span><span class="col-desc">When they entered this stage — defaults to today if blank</span><span class="col-opt">optional</span></div>
+    <div class="col-row"><span class="col-name">Est. Value (IDR mn)</span><span class="col-desc">Number only — e.g. 1.5 means IDR 1.5mn</span><span class="col-opt">optional</span></div>
+    <div class="col-row"><span class="col-name">Event Type</span><span class="col-desc">Must match valid types — use Other + Custom Type for unlisted</span><span class="col-req">required</span></div>
+    <div class="col-row"><span class="col-name">Custom Event Type</span><span class="col-desc">Free text — only fill if Event Type = Other</span><span class="col-opt">optional</span></div>
+    <div class="col-row"><span class="col-name">Event Date (DD MM YYYY)</span><span class="col-desc">Date of this specific event, e.g. 15 11 2026</span><span class="col-req">required</span></div>
+    <div class="col-row"><span class="col-name">Headcount</span><span class="col-desc">Expected number of guests for this event</span><span class="col-opt">optional</span></div>
+    <div class="col-row"><span class="col-name">Reminder Date (DD MM YYYY)</span><span class="col-desc">When to follow up — creates a reminder on the client card</span><span class="col-opt">optional</span></div>
+    <div class="col-row"><span class="col-name">Reminder Note</span><span class="col-desc">What the reminder is about</span><span class="col-opt">optional</span></div>
+  </div>
+
+  <div class="section-label">Valid values</div>
+  <div class="ref-grid">
+    <div class="ref-card">
+      <h3>Pipeline Stages</h3>
+      <div class="ref-item"><code>Lead from Agent</code></div>
+      <div class="ref-item"><code>Tasting Scheduled</code></div>
+      <div class="ref-item"><code>Tasting Completed</code></div>
+      <div class="ref-item"><code>Sample Menu Sent</code></div>
+      <div class="ref-item"><code>Menu Finalization</code></div>
+      <div class="ref-item"><code>Awaiting Confirmation</code></div>
+      <div class="ref-item"><code>Confirmed</code></div>
+      <div class="ref-item"><code>Lost</code></div>
+      <div class="ref-item"><code>Completed</code></div>
+    </div>
+    <div class="ref-card">
+      <h3>Event Types</h3>
+      <div class="ref-item"><code>Wedding</code></div>
+      <div class="ref-item"><code>Mehendi</code></div>
+      <div class="ref-item"><code>Haldi</code></div>
+      <div class="ref-item"><code>After Party</code></div>
+      <div class="ref-item"><code>Sadhya Dinner</code></div>
+      <div class="ref-item"><code>High Tea</code></div>
+      <div class="ref-item"><code>Breakfast</code></div>
+      <div class="ref-item"><code>Lunch</code></div>
+      <div class="ref-item"><code>Other</code><span class="hint">→ fill Custom Type column</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function downloadCSV(){
+  const headers=["Client Name","Phone","Email","Agent / Referrer","Stage","Stage Since (DD MM YYYY)","Est. Value (IDR mn)","Event Type","Custom Event Type","Event Date (DD MM YYYY)","Headcount","Reminder Date (DD MM YYYY)","Reminder Note"];
+  const samples=[
+    ["Sharma & Priya","+62 812 1234 5678","","Varawedding","Confirmed","01 06 2026","2.5","Wedding","","15 11 2026","220","",""],
+    ["Sharma & Priya","+62 812 1234 5678","","Varawedding","Confirmed","01 06 2026","2.5","Mehendi","","13 11 2026","80","",""],
+    ["Gupta Family","+62 878 9999 0000","","Direct","Tasting Scheduled","20 07 2026","1.2","Other","Engagement Dinner","08 02 2027","60","30 07 2026","Follow up post tasting"],
+    ["","","","","","","","","","","","",""],
+    ["","","","","","","","","","","","",""],
+    ["","","","","","","","","","","","",""],
+    ["","","","","","","","","","","","",""],
+    ["","","","","","","","","","","","",""],
+  ];
+  const esc=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const csv=[headers,...samples].map(r=>r.map(esc).join(",")).join("\r\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="chowk-pipeline-import.csv";
+  a.click();
+}
+</script>
+</body>
+</html>
