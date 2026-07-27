@@ -209,11 +209,21 @@ function renderMonthly(board){
     const totalVal=clients.reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
     const confirmedVal=clients.filter(c=>c.stage==="Confirmed"||c.stage==="Completed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
 
+    const TARGET=600;
+    const pendingVal=totalVal-confirmedVal;
+    const confirmedPct=Math.min(100,confirmedVal/TARGET*100);
+    const pendingPct=Math.min(100-confirmedPct,pendingVal/TARGET*100);
+    const overTarget=totalVal>TARGET;
+
     const col=document.createElement("div");col.className="col";col.style.minWidth="220px";col.style.width="220px";col.style.flexShrink="0";
-    col.innerHTML=`<h3 style="flex-direction:column;align-items:flex-start;gap:2px">
+    col.innerHTML=`<h3 style="flex-direction:column;align-items:flex-start;gap:4px">
       <span>${MONTHS[m]} ${y}</span>
-      <span style="font-size:10px;font-weight:400;color:#2e7d32;background:#e8f5e9;border-radius:8px;padding:1px 7px;margin-top:2px">
-        IDR ${totalVal.toFixed(1)}mn total${confirmedVal?"  ·  "+confirmedVal.toFixed(1)+"mn confirmed":""}
+      <div style="width:100%;height:8px;background:#e8e5de;border-radius:4px;overflow:hidden;display:flex">
+        <div style="width:${confirmedPct}%;background:#2e7d32;height:100%;transition:width .3s"></div>
+        <div style="width:${pendingPct}%;background:#f9a825;height:100%;transition:width .3s"></div>
+      </div>
+      <span style="font-size:10px;font-weight:400;color:${overTarget?"#b71c1c":"#666"}">
+        IDR ${totalVal.toFixed(0)}mn / 600mn${confirmedVal?` · ${confirmedVal.toFixed(0)}mn confirmed`:""}
       </span>
     </h3>`;
 
