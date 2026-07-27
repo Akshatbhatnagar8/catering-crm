@@ -15,6 +15,11 @@ header .toggle{display:flex;border:1px solid var(--border);border-radius:6px;ove
 header .toggle button{background:#fff;color:#555;padding:6px 12px;font-size:12px;border:0;border-right:1px solid var(--border)}
 header .toggle button:last-child{border-right:0}
 header .toggle button.active{background:var(--accent);color:#fff}
+#searchBar{background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px;width:180px;outline:none}
+#searchBar:focus{border-color:var(--accent)}
+.search-hl{background:#fff3cd;border-radius:2px}
+.archive-toggle{font-size:11px;color:#aaa;cursor:pointer;text-align:center;padding:6px 0;border-top:1px solid var(--border);margin-top:6px}
+.archive-toggle:hover{color:var(--accent)}
 button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:14px}
 button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 .board{display:flex;gap:12px;padding:16px;overflow-x:auto;min-height:calc(100vh - 60px)}
@@ -76,8 +81,10 @@ button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 <header>
 <a href="/home.html" style="color:#b8541a;text-decoration:none;font-size:20px;margin-right:4px" title="Home">⌂</a>
 <h1 style="font-size:16px;flex:1">✅ To Do Lists</h1>
+<input id="searchBar" placeholder="🔍 Search tasks…" oninput="render()"/>
 <div class="toggle" id="viewToggle">
   <button data-v="active" class="active">Active</button>
+  <button data-v="today">Due Today</button>
   <button data-v="week">Last Week</button>
 </div>
 </header>
@@ -100,6 +107,7 @@ const STALE_DAYS=7;
 
 let todos=[],clients=[];
 let view="active";
+let showArchive={}; // per-person archive toggle
 const dirty=new Set(),deleted=new Set();
 let saveTimer=null;
 
@@ -153,21 +161,35 @@ async function flush(){
 function save(id){if(id)dirty.add(id);render();clearTimeout(saveTimer);saveTimer=setTimeout(flush,400)}
 window.addEventListener("beforeunload",flush);
 
+const searchQ=()=>(document.getElementById("searchBar")?.value||"").toLowerCase().trim();
+function highlight(text,q){
+  if(!q)return esc(text);
+  const i=text.toLowerCase().indexOf(q);
+  if(i<0)return esc(text);
+  return esc(text.slice(0,i))+`<mark class="search-hl">${esc(text.slice(i,i+q.length))}</mark>`+esc(text.slice(i+q.length));
+}
+
 function render(){
   const main=document.getElementById("main");
-  main.className=view==="week"?"":"";
   main.innerHTML="";
   if(view==="active")renderActive(main);
+  else if(view==="today")renderToday(main);
   else renderWeek(main);
 }
 
+const ARCHIVE_DAYS=7; // done tasks older than this are archived
+
 function renderActive(root){
   const board=document.createElement("div");board.className="board";
+  const q=searchQ();
   PEOPLE.forEach(p=>{
-    const mine=todos.filter(t=>t.assignee===p);
-    const rocks=mine.filter(t=>t.bigRock&&!t.done).sort(sortFn);
-    const others=mine.filter(t=>!t.bigRock).sort(sortFn);
-    const openCount=mine.filter(t=>!t.done).length;
+    const mine=todos.filter(t=>t.assignee===p&&(!q||t.text.toLowerCase().includes(q)));
+    const isArchived=t=>t.done&&t.doneAt&&daysBetween(t.doneAt.slice(0,10),today())>=ARCHIVE_DAYS;
+    const visible=mine.filter(t=>!isArchived(t));
+    const archived=mine.filter(t=>isArchived(t));
+    const rocks=visible.filter(t=>t.bigRock&&!t.done).sort(sortFn);
+    const others=visible.filter(t=>!t.bigRock).sort(sortFn);
+    const openCount=visible.filter(t=>!t.done).length;
     const col=document.createElement("div");col.className="col";
     col.innerHTML=`<h3>${p}<span class="count ${openCount>ACTIVE_CAP?"over":""}">${openCount}</span></h3>`;
 
@@ -189,6 +211,15 @@ function renderActive(root){
       const h=document.createElement("div");h.className="rocks-hdr";h.textContent="⭐ Big Rocks";col.appendChild(h);
       rocks.forEach(t=>col.appendChild(todoEl(t)));
     }
+    // archive toggle
+    if(archived.length){
+      const tog=document.createElement("div");tog.className="archive-toggle";
+      tog.textContent=showArchive[p]?`▲ Hide ${archived.length} archived`:`▼ Show ${archived.length} archived`;
+      tog.onclick=()=>{showArchive[p]=!showArchive[p];render()};
+      col.appendChild(tog);
+      if(showArchive[p])archived.forEach(t=>col.appendChild(todoEl(t)));
+    }
+
     if(openCount>ACTIVE_CAP){
       const warn=document.createElement("div");warn.style.cssText="font-size:10px;color:#b37700;margin:4px 2px;text-transform:uppercase";warn.textContent=`⚠ ${openCount}/${ACTIVE_CAP} cap — cull or complete`;
       col.appendChild(warn);
@@ -222,7 +253,7 @@ function todoEl(t){
   const overdue=t.due&&t.due<today()&&!t.done;
   const client=t.clientId?clients.find(c=>c.id===t.clientId):null;
   d.innerHTML=`<input type="checkbox" ${t.done?"checked":""}/>
-    <div class="text">${esc(t.text)}
+    <div class="text">${highlight(t.text,searchQ())}
       <div class="meta">
         ${t.category?`<span class="chip">${t.category}</span>`:""}
         ${t.recurring?`<span class="rec">🔁 ${t.recurring}</span>`:""}
@@ -302,6 +333,34 @@ async function pushBack(id){
   save(t.id);await flush();render();
 }
 window.saveEdit=saveEdit;window.pushBack=pushBack;
+
+function renderToday(root){
+  const q=searchQ();
+  const t=today();
+  const due=todos.filter(x=>!x.done&&x.due&&x.due<=t&&(!q||x.text.toLowerCase().includes(q))).sort(sortFn);
+  const overdue=due.filter(x=>x.due<t);
+  const dueToday=due.filter(x=>x.due===t);
+  const wrap=document.createElement("div");wrap.style.cssText="padding:16px;max-width:900px;margin:0 auto";
+  if(!due.length){wrap.innerHTML=`<p style="color:#aaa;text-align:center;padding:40px">🎉 Nothing due today!</p>`;root.appendChild(wrap);return;}
+  const section=(title,color,items)=>{
+    if(!items.length)return "";
+    const byPerson=PEOPLE.map(p=>({p,items:items.filter(x=>x.assignee===p)})).filter(x=>x.items.length);
+    return `<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:${color};margin:18px 0 10px">${title} (${items.length})</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+    ${byPerson.map(({p,items})=>`
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:220px;flex:1">
+        <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;text-transform:uppercase">${p}</div>
+        ${items.map(t=>`<div style="font-size:13px;padding:4px 0;border-bottom:1px solid #f0ece4;display:flex;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${t.priority==='high'?'var(--warn)':t.priority==='med'?'var(--stale)':'#8bb8d6'};flex-shrink:0"></span>
+          <span style="flex:1">${highlight(t.text,q)}</span>
+          <span style="font-size:10px;color:#aaa">${t.category||""}</span>
+        </div>`).join("")}
+      </div>`).join("")}
+    </div>`;
+  };
+  wrap.innerHTML=section("⚠ Overdue","var(--warn)",overdue)+section("📅 Due Today","var(--accent)",dueToday);
+  root.appendChild(wrap);
+}
 
 function renderWeek(root){
   const weekAgo=addDays(today(),-7);
