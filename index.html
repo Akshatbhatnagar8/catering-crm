@@ -133,6 +133,7 @@ function setView(v){
   render();
 }
 window.setView=setView;
+window._shiftMonth=function(n){monthOffset=Math.max(0,monthOffset+n);render();};
 
 function render(){
   const board=document.getElementById("board");board.innerHTML="";
@@ -181,9 +182,9 @@ function renderMonthly(board){
   const startD=new Date(now.getFullYear(),now.getMonth()+monthOffset,1);
   const endD=new Date(now.getFullYear(),now.getMonth()+monthOffset+11,1);
   nav.innerHTML=`
-    <button class="ghost" style="padding:6px 14px;font-size:16px" onclick="monthOffset=Math.max(0,monthOffset-12);render()">‹ Back</button>
+    <button class="ghost" style="padding:6px 14px;font-size:16px" onclick="window._shiftMonth(-12)">‹ Back</button>
     <span style="font-size:13px;color:#666;flex:1;text-align:center">${MONTHS[startD.getMonth()]} ${startD.getFullYear()} — ${MONTHS[endD.getMonth()]} ${endD.getFullYear()}</span>
-    <button class="ghost" style="padding:6px 14px;font-size:16px" onclick="monthOffset+=12;render()">Forward ›</button>`;
+    <button class="ghost" style="padding:6px 14px;font-size:16px" onclick="window._shiftMonth(12)">Forward ›</button>`;
   board.appendChild(nav);
   board.style.flexWrap="nowrap";
 
