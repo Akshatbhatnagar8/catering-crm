@@ -50,15 +50,34 @@ tbody tr:hover td{background:#fdf6f2}
 <header>
   <a href="/home.html" style="color:var(--accent);text-decoration:none;font-size:20px;margin-right:4px" title="Home">⌂</a>
   <h1>📋 Pipeline Import Template</h1>
-  <button onclick="downloadCSV()">
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    Download CSV
-  </button>
+  <a href="/template.xlsx" download style="text-decoration:none">
+    <button>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Download Excel Template
+    </button>
+  </a>
 </header>
 
 <div class="page">
   <div class="intro">
-    <p>Fill in the CSV and send it back — one row per event. If a client has multiple events (e.g. Wedding + Mehendi), repeat their details across multiple rows with the same client name.</p>
+    <p>Download the Excel file, fill it in — Stage and Event Type columns have dropdowns — then upload it here to add clients to the pipeline. One row per event; repeat client details across rows for multi-event clients.</p>
+  </div>
+
+  <div class="section-label">Upload filled template</div>
+  <div id="uploadArea" style="border:2px dashed var(--border);border-radius:10px;padding:28px 20px;text-align:center;background:#fff;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('csvFile').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleDrop(event)">
+    <div style="font-size:28px;margin-bottom:8px">📂</div>
+    <div style="font-size:13px;font-weight:600;color:var(--ink)">Click to select your filled Excel or CSV file</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px">or drag and drop here</div>
+    <input type="file" id="csvFile" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])"/>
+  </div>
+  <div id="previewSection" style="display:none;margin-top:16px">
+    <div id="previewLabel" class="section-label"></div>
+    <div id="previewWrap" class="table-wrap"></div>
+    <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+      <button id="importBtn" onclick="importClients()">Add to Pipeline</button>
+      <button class="ghost" onclick="cancelUpload()">Cancel</button>
+      <span id="importStatus" style="font-size:12px;color:var(--muted)"></span>
+    </div>
   </div>
 
   <div class="section-label">Preview — sample rows</div>
@@ -172,25 +191,170 @@ tbody tr:hover td{background:#fdf6f2}
   </div>
 </div>
 
-<script>
-function downloadCSV(){
-  const headers=["Client Name","Phone","Email","Agent / Referrer","Stage","Stage Since (DD MM YYYY)","Est. Value (IDR mn)","Event Type","Custom Event Type","Event Date (DD MM YYYY)","Headcount","Reminder Date (DD MM YYYY)","Reminder Note"];
-  const samples=[
-    ["Sharma & Priya","+62 812 1234 5678","","Varawedding","Confirmed","01 06 2026","2.5","Wedding","","15 11 2026","220","",""],
-    ["Sharma & Priya","+62 812 1234 5678","","Varawedding","Confirmed","01 06 2026","2.5","Mehendi","","13 11 2026","80","",""],
-    ["Gupta Family","+62 878 9999 0000","","Direct","Tasting Scheduled","20 07 2026","1.2","Other","Engagement Dinner","08 02 2027","60","30 07 2026","Follow up post tasting"],
-    ["","","","","","","","","","","","",""],
-    ["","","","","","","","","","","","",""],
-    ["","","","","","","","","","","","",""],
-    ["","","","","","","","","","","","",""],
-    ["","","","","","","","","","","","",""],
-  ];
-  const esc=v=>`"${String(v).replace(/"/g,'""')}"`;
-  const csv=[headers,...samples].map(r=>r.map(esc).join(",")).join("\r\n");
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download="chowk-pipeline-import.csv";
-  a.click();
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const supa = createClient(
+  "https://lvcioeljvwahvsulgilt.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2Y2lvZWxqdndhaHZzdWxnaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDU4MjIsImV4cCI6MjA5MTEyMTgyMn0.RnOOCg3x-ltDU3H-yME5g8Vd6XCHILXqqFjyWDD1AJs"
+);
+
+const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
+const today = () => new Date().toISOString().slice(0,10);
+
+// DD MM YYYY → YYYY-MM-DD
+function parseDate(s) {
+  if (!s) return "";
+  const p = String(s).trim().split(/[\s\/\-]+/);
+  if (p.length === 3) {
+    const [d,m,y] = p;
+    if (y.length === 4) return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  return "";
+}
+
+let parsedClients = [];
+
+function parseCSVLine(line) {
+  const cells = []; let cur = ""; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (inQ && line[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; }
+    else if (c === ',' && !inQ) { cells.push(cur.trim()); cur=""; }
+    else cur += c;
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  const headers = parseCSVLine(lines[0]).map(h=>h.toLowerCase());
+  const idx = k => headers.findIndex(h=>h.includes(k));
+  const iName=idx('client'), iPhone=idx('phone'), iEmail=idx('email'),
+        iAgent=idx('agent'), iStage=idx('stage') , iStageSince=idx('stage since'),
+        iVal=idx('value'), iType=idx('event type'), iCustom=idx('custom'),
+        iDate=idx('event date'), iPax=idx('headcount'), iRemDate=idx('reminder date'), iRemNote=idx('reminder note');
+
+  const rows = lines.slice(1).map(l=>parseCSVLine(l));
+  const map = new Map();
+  rows.forEach(r => {
+    const name = r[iName]||""; if(!name) return;
+    if (!map.has(name)) {
+      map.set(name, {
+        id: uid(), name,
+        phone: r[iPhone]||"", email: r[iEmail]||"",
+        agent: r[iAgent]||"",
+        stage: r[iStage]||"Lead from Agent",
+        stageSince: parseDate(r[iStageSince])||today(),
+        estValue: r[iVal]||"",
+        reminder: parseDate(r[iRemDate])||"",
+        reminderNote: r[iRemNote]||"",
+        tastingNotes:"", log:[], files:[], events:[]
+      });
+    }
+    const c = map.get(name);
+    const evDate = parseDate(r[iDate]);
+    if (evDate || (r[iType]||"")) {
+      c.events.push({ id:uid(), type:r[iType]||"Other", customType:r[iCustom]||"", date:evDate, headcount:r[iPax]||"" });
+    }
+    // update reminder from any row that has one
+    if (!c.reminder && parseDate(r[iRemDate])) { c.reminder=parseDate(r[iRemDate]); c.reminderNote=r[iRemNote]||""; }
+  });
+  return [...map.values()];
+}
+
+function showPreview(clients) {
+  parsedClients = clients;
+  const section = document.getElementById('previewSection');
+  const label = document.getElementById('previewLabel');
+  const wrap = document.getElementById('previewWrap');
+  label.textContent = `${clients.length} client${clients.length!==1?'s':''} ready to import`;
+  const rows = clients.map(c=>`<tr>
+    <td><strong>${c.name}</strong></td>
+    <td>${c.agent||'—'}</td>
+    <td><span class="stage">${c.stage}</span></td>
+    <td>${c.estValue?'IDR '+c.estValue+'mn':'—'}</td>
+    <td>${c.events.length} event${c.events.length!==1?'s':''}: ${c.events.map(e=>e.type==='Other'&&e.customType?e.customType:e.type).join(', ')||'—'}</td>
+    <td>${c.reminder||'—'}</td>
+  </tr>`).join('');
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Client</th><th>Agent</th><th>Stage</th><th>Value</th><th>Events</th><th>Reminder</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+  section.style.display='block';
+  document.getElementById('importBtn').textContent=`Add ${clients.length} client${clients.length!==1?'s':''} to Pipeline`;
+  document.getElementById('importStatus').textContent='';
+}
+
+window.cancelUpload = () => {
+  document.getElementById('previewSection').style.display='none';
+  document.getElementById('csvFile').value='';
+  parsedClients=[];
+};
+
+window.importClients = async () => {
+  if (!parsedClients.length) return;
+  const btn = document.getElementById('importBtn');
+  const status = document.getElementById('importStatus');
+  btn.disabled=true; btn.textContent='Importing…'; status.textContent='';
+  let ok=0, fail=0;
+  for (const c of parsedClients) {
+    const { error } = await supa.from('clients').upsert({ id:c.id, data:c });
+    if (error) fail++; else ok++;
+  }
+  btn.disabled=false;
+  if (fail===0) {
+    btn.textContent='Done!';
+    status.textContent=`✓ ${ok} client${ok!==1?'s':''} added to pipeline.`;
+    status.style.color='var(--ok)';
+    setTimeout(()=>window.cancelUpload(),3000);
+  } else {
+    btn.textContent='Retry';
+    status.textContent=`${ok} added, ${fail} failed. Check console.`;
+    status.style.color='var(--warn)';
+  }
+};
+
+window.handleDrop = (e) => {
+  e.preventDefault();
+  document.getElementById('uploadArea').style.borderColor='var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file) handleFileInner(file);
+};
+
+window.handleFile = (file) => { if(file) handleFileInner(file); };
+
+async function handleFileInner(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext==='csv') {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const clients = parseCSV(e.target.result);
+      if (!clients.length) { alert('No valid rows found. Make sure Client Name, Stage, and Event Date are filled in.'); return; }
+      showPreview(clients);
+    };
+    reader.readAsText(file);
+  } else if (ext==='xlsx'||ext==='xls') {
+    // Load SheetJS on demand
+    if (!window.XLSX) {
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    // Use first non-hidden sheet
+    const sheetName = wb.SheetNames.find(n=>n!=='_ref') || wb.SheetNames[0];
+    const csv = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]);
+    const clients = parseCSV(csv);
+    if (!clients.length) { alert('No valid rows found. Make sure Client Name, Stage, and Event Date are filled in.'); return; }
+    showPreview(clients);
+  } else {
+    alert('Please upload the Excel template (.xlsx) or a CSV file.');
+  }
 }
 </script>
 </body>
