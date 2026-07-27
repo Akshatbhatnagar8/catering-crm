@@ -188,10 +188,13 @@ function renderMonthly(board){
   const endD=new Date(now.getFullYear(),now.getMonth()+monthOffset+11,1);
   const nav=document.createElement("div");
   nav.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 16px;flex-shrink:0;width:100%;border-bottom:1px solid #e3e0d8";
-  nav.innerHTML=`
-    <button class="ghost" style="padding:6px 14px;font-size:16px" onclick="window._shiftMonth(-12)">‹ Back</button>
-    <span style="font-size:13px;color:#666;flex:1;text-align:center">${MONTHS[startD.getMonth()]} ${startD.getFullYear()} — ${MONTHS[endD.getMonth()]} ${endD.getFullYear()}</span>
-    <button class="ghost" style="padding:6px 14px;font-size:16px" onclick="window._shiftMonth(12)">Forward ›</button>`;
+  const btnBack=document.createElement("button");btnBack.className="ghost";btnBack.style.cssText="padding:6px 14px;font-size:16px";btnBack.textContent="‹ Back";
+  btnBack.addEventListener("click",()=>{monthOffset=Math.max(0,monthOffset-12);render();});
+  const navLabel=document.createElement("span");navLabel.style.cssText="font-size:13px;color:#666;flex:1;text-align:center";
+  navLabel.textContent=`${MONTHS[startD.getMonth()]} ${startD.getFullYear()} — ${MONTHS[endD.getMonth()]} ${endD.getFullYear()}`;
+  const btnFwd=document.createElement("button");btnFwd.className="ghost";btnFwd.style.cssText="padding:6px 14px;font-size:16px";btnFwd.textContent="Forward ›";
+  btnFwd.addEventListener("click",()=>{monthOffset+=12;render();});
+  nav.appendChild(btnBack);nav.appendChild(navLabel);nav.appendChild(btnFwd);
   board.appendChild(nav);
 
   // inner scrollable row for columns
