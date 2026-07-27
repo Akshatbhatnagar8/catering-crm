@@ -2,181 +2,322 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>The Chowk — What's New</title>
+<title>The Chowk — Platform Guide</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
-:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--border:#e3e0d8;--ok:#2e7d32;--blue:#1565c0}
+:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--border:#e3e0d8;--ok:#2e7d32;--blue:#1565c0;--warn:#c0392b}
 *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);min-height:100vh}
 header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
 header h1{font-size:16px;flex:1;margin:0}
-.page{max-width:640px;margin:0 auto;padding:28px 20px 60px}
-/* Release block */
-.release{margin-bottom:36px}
-.release-header{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
-.release-date{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.release-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--accent);color:#fff;letter-spacing:.04em}
-.release-tag.minor{background:#e8f0fb;color:var(--blue)}
-/* Change item */
-.change{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-.change:last-child{border-bottom:none}
-.change-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px}
-.change-icon.weddings{background:#fdf0e8}
-.change-icon.todos{background:#e8f5e9}
-.change-icon.groups{background:#e8f0fb}
-.change-icon.platform{background:#f3f0eb}
-.change-body{}
-.change-title{font-size:13px;font-weight:600;color:var(--ink);line-height:1.4}
-.change-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.55}
-.tool-label{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;margin-right:5px;vertical-align:middle}
-.tool-label.weddings{background:#fdf0e8;color:var(--accent)}
-.tool-label.todos{background:#e8f5e9;color:var(--ok)}
-.tool-label.groups{background:#e8f0fb;color:var(--blue)}
-.tool-label.platform{background:#ede9e3;color:#555}
+
+/* Nav */
+.toc{background:#fff;border-bottom:1px solid var(--border);padding:10px 20px;display:flex;gap:6px;flex-wrap:wrap}
+.toc a{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;text-decoration:none;background:var(--bg);color:var(--muted);border:1px solid var(--border);white-space:nowrap}
+.toc a:hover{border-color:var(--accent);color:var(--accent)}
+
+.page{max-width:680px;margin:0 auto;padding:28px 20px 80px}
+
+/* Section */
+.section{margin-bottom:48px}
+.section-eyebrow{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.section-title{font-size:20px;font-weight:700;margin-bottom:6px;line-height:1.3}
+.section-intro{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:20px}
+
+/* Feature card */
+.feature{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:10px}
+.feature-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.feature-icon{font-size:18px;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feature-icon.orange{background:#fdf0e8}
+.feature-icon.green{background:#e8f5e9}
+.feature-icon.blue{background:#e8f0fb}
+.feature-icon.grey{background:#ede9e3}
+.feature-name{font-size:14px;font-weight:700;color:var(--ink)}
+.feature-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.feature-body{font-size:13px;color:var(--ink);line-height:1.65}
+.feature-body p{margin-bottom:8px}
+.feature-body p:last-child{margin-bottom:0}
+
+/* Steps */
+.steps{margin:10px 0 0;display:flex;flex-direction:column;gap:6px}
+.step{display:flex;gap:10px;align-items:flex-start}
+.step-num{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;color:var(--ink);line-height:1.55;flex:1}
+
+/* Tip box */
+.tip{background:#fff8f4;border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:9px 13px;font-size:12px;color:var(--ink);margin-top:10px;line-height:1.6}
+.tip strong{color:var(--accent)}
+
+/* New badge */
+.new-badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:var(--accent);color:#fff;letter-spacing:.04em;vertical-align:middle;margin-left:6px;text-transform:uppercase}
+
 /* Divider */
-hr{border:none;border-top:1px solid var(--border);margin:8px 0 24px}
+.divider{border:none;border-top:1px solid var(--border);margin:40px 0}
+
+/* Key */
+kbd{display:inline-block;background:#f0ede8;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;font-family:monospace;color:var(--ink)}
 </style>
 </head>
 <body>
 <header>
   <a href="/home.html" style="color:var(--accent);text-decoration:none;font-size:20px;margin-right:4px">⌂</a>
-  <h1>📋 What's New</h1>
+  <h1>📖 Platform Guide</h1>
 </header>
+
+<div class="toc">
+  <a href="#weddings">💍 Weddings & Events</a>
+  <a href="#deposits">💰 Deposits</a>
+  <a href="#monthly">📅 Monthly View</a>
+  <a href="#todos">✅ Todo Lists</a>
+  <a href="#groups">🗓 Travel Agents</a>
+  <a href="#import">📋 Import</a>
+</div>
 
 <div class="page">
 
-  <div class="release">
-    <div class="release-header">
-      <span class="release-date">27 Jul 2026</span>
-      <span class="release-tag">Latest</span>
-    </div>
+  <!-- WEDDINGS -->
+  <div class="section" id="weddings">
+    <div class="section-eyebrow">Weddings & Events</div>
+    <div class="section-title">Managing your sales pipeline</div>
+    <div class="section-intro">The pipeline tracks every enquiry from first contact through to completed event. Each client moves through stages as the sale progresses.</div>
 
-    <div class="change">
-      <div class="change-icon weddings">💰</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>Deposit Tracker</div>
-        <div class="change-desc">New Deposits tab in the Wedding & Events pipeline. Track deposit amounts, dates, and notes per client. Live balance and status (Awaiting / Partial / Paid in Full) with summary totals at the top. Saves automatically.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon orange">➕</div>
+        <div><div class="feature-name">Adding a new client</div></div>
+      </div>
+      <div class="feature-body">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-text">Tap <strong>+ New Client</strong> in the top right.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">Fill in the client name, phone, email, and which agent referred them.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">Go to the <strong>Events</strong> tab and add each event — select the type (Wedding, Mehendi, Haldi, etc.), date, and expected headcount. For anything not in the list, choose <strong>Other</strong> and type the name.</div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-text">Add an <strong>Est. Value (IDR mn)</strong> — this feeds the revenue bars and summary totals.</div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-text">Close the card — it saves automatically.</div></div>
+        </div>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon weddings">📊</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>Monthly bar — three segments</div>
-        <div class="change-desc">The 600mn revenue bar in monthly view now shows three colours: blue for Completed (delivered), green for Confirmed (signed, upcoming), yellow for Pipeline (in progress). The label below shows the breakdown.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon orange">🔄</div>
+        <div><div class="feature-name">Moving clients through stages</div></div>
+      </div>
+      <div class="feature-body">
+        <p>Open the client card and change the <strong>Stage</strong> dropdown. The pipeline has these stages in order:</p>
+        <p><strong>Lead from Agent → Tasting Scheduled → Tasting Completed → Sample Menu Sent → Menu Finalization → Awaiting Confirmation → Confirmed → Completed</strong></p>
+        <p>Cards highlighted in <span style="color:var(--warn)">red</span> have been in their stage too long. Cards with a <span style="color:#e6a700">yellow</span> border have a reminder due today.</p>
+        <div class="tip"><strong>Tip:</strong> Once an event has happened, move the client to <strong>Completed</strong>. This shifts their value from the Confirmed bucket to the Completed bucket in the summary bar.</div>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon weddings">📈</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>Pipeline summary bar split</div>
-        <div class="change-desc">The bar above the kanban now shows Pipeline, Confirmed, and Completed as separate numbers — so revenue that's been delivered no longer gets counted alongside upcoming bookings.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon orange">⏰</div>
+        <div><div class="feature-name">Setting a follow-up reminder</div></div>
+      </div>
+      <div class="feature-body">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-text">Open the client card and go to the <strong>Reminder</strong> tab.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">Set a date, add a note about what needs to happen, and assign it to a team member.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">This automatically creates a task in that person's Todo list.</div></div>
+        </div>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon todos">🔁</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label todos">Todos</span>Recurring task separator</div>
-        <div class="change-desc">Each person's column now shows a "Recurring" divider line between one-off tasks and repeating ones, so daily/weekly/monthly tasks don't visually mix with new work.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon orange">📁</div>
+        <div><div class="feature-name">Uploading files</div></div>
       </div>
-    </div>
-
-    <div class="change">
-      <div class="change-icon platform">📋</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label platform">Platform</span>Excel import template</div>
-        <div class="change-desc">Download a formatted Excel file with Stage and Event Type dropdowns, fill it in, and upload it directly to add clients to the pipeline. No CSV conversion needed.</div>
-      </div>
-    </div>
-
-    <div class="change">
-      <div class="change-icon weddings">🗓</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>Monthly view — Today button &amp; nav arrows</div>
-        <div class="change-desc">Back / Forward buttons navigate by 12 months. A Today button (greyed out when already on current window) snaps back instantly from wherever you've scrolled.</div>
+      <div class="feature-body">
+        <p>Open the client card → <strong>Files</strong> tab → tap <strong>Upload File</strong>. You can attach menus, invoices, proposals — anything up to 25 MB. Files can be previewed in the browser or downloaded.</p>
       </div>
     </div>
   </div>
 
-  <hr/>
+  <hr class="divider"/>
 
-  <div class="release">
-    <div class="release-header">
-      <span class="release-date">Jun – Jul 2026</span>
-      <span class="release-tag minor">Earlier</span>
-    </div>
+  <!-- DEPOSITS -->
+  <div class="section" id="deposits">
+    <div class="section-eyebrow">Weddings & Events</div>
+    <div class="section-title">Deposit Tracker <span class="new-badge">New</span></div>
+    <div class="section-intro">Switch to the Deposits tab (next to Pipeline and Monthly) to see all confirmed and completed events with their payment status.</div>
 
-    <div class="change">
-      <div class="change-icon weddings">📅</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>Monthly pipeline view</div>
-        <div class="change-desc">A second view alongside the kanban that shows the next 12 months as columns, with clients grouped by their event date. Each column has a 600mn revenue progress bar.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon orange">💰</div>
+        <div><div class="feature-name">Recording a deposit</div></div>
+      </div>
+      <div class="feature-body">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-text">Go to <strong>Deposits</strong> view from the header.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">Find the client in the table. Type the deposit amount (in IDR mn) in the <strong>Deposit Received</strong> column.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">Set the date the deposit was received and add a note if needed (e.g. "Bank transfer received").</div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-text">The <strong>Balance</strong> and <strong>Status</strong> columns update instantly. It saves automatically.</div></div>
+        </div>
+        <div class="tip"><strong>Status labels:</strong> <strong>Awaiting</strong> = no deposit yet · <strong>Partial</strong> = deposit received but balance outstanding · <strong>Paid in Full</strong> = fully paid.</div>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon weddings">💍</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>Estimated value on cards</div>
-        <div class="change-desc">Est. Value (IDR mn) field added to each client. Shows on kanban cards and monthly columns. Pipeline summary bar above the kanban totals all active, confirmed, and completed values.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon orange">📊</div>
+        <div><div class="feature-name">Reading the summary</div></div>
+      </div>
+      <div class="feature-body">
+        <p>At the top of the Deposits view you'll see four numbers: <strong>Total Confirmed Value</strong> (what you're owed across all confirmed events), <strong>Deposits Received</strong> (what's come in so far), <strong>Outstanding</strong> (what's still owed), and the number of clients.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- MONTHLY -->
+  <div class="section" id="monthly">
+    <div class="section-eyebrow">Weddings & Events</div>
+    <div class="section-title">Monthly view <span class="new-badge">New</span></div>
+    <div class="section-intro">Switch to Monthly to see the next 12 months as columns, with each client grouped by their event date and a revenue bar showing progress against the IDR 600mn monthly target.</div>
+
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon orange">📅</div>
+        <div><div class="feature-name">Navigating months</div></div>
+      </div>
+      <div class="feature-body">
+        <p>Use <strong>‹ Back</strong> and <strong>Forward ›</strong> to move by 12 months at a time. Tap <strong>Today</strong> to snap back to the current window. Scroll left and right inside the columns to see all 12 months.</p>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon weddings">✅</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>Completed stage</div>
-        <div class="change-desc">A Completed column added after Lost for events that have happened. Moves confirmed revenue into a separate bucket in the summary bar and monthly bars.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon orange">📊</div>
+        <div><div class="feature-name">Reading the revenue bar</div></div>
+      </div>
+      <div class="feature-body">
+        <p>Each month column has a coloured bar showing progress toward IDR 600mn:</p>
+        <p><span style="display:inline-block;width:12px;height:12px;background:#1565c0;border-radius:3px;vertical-align:middle;margin-right:4px"></span><strong>Blue</strong> = Completed (event has happened, revenue delivered)<br>
+        <span style="display:inline-block;width:12px;height:12px;background:#2e7d32;border-radius:3px;vertical-align:middle;margin-right:4px"></span><strong>Green</strong> = Confirmed (signed, upcoming)<br>
+        <span style="display:inline-block;width:12px;height:12px;background:#f9a825;border-radius:3px;vertical-align:middle;margin-right:4px"></span><strong>Yellow</strong> = Pipeline (still in progress, not yet confirmed)</p>
+        <p>The label below shows the breakdown, e.g. <em>IDR 450mn / 600mn · 200 done · 250 conf</em>.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- TODOS -->
+  <div class="section" id="todos">
+    <div class="section-eyebrow">Todo Lists</div>
+    <div class="section-title">Team task board</div>
+    <div class="section-intro">Each person has their own column. Tasks are sorted with urgent items at the top and recurring tasks at the bottom, separated by a divider.</div>
+
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon green">➕</div>
+        <div><div class="feature-name">Adding a task</div></div>
+      </div>
+      <div class="feature-body">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-text">Type the task in the box at the top of the person's column.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">Set the priority (High / Med / Low), category, and due date.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">For tasks that repeat, set the <strong>Recurring</strong> dropdown to Daily, Weekly, or Monthly — the task will automatically reopen after the period ends.</div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-text">Tap <strong>+ Add</strong> or press Enter to save.</div></div>
+        </div>
+        <div class="tip"><strong>⭐ Big Rocks:</strong> Tick the star checkbox to mark a task as a Big Rock — important, high-priority work. These appear at the top of the column in their own section.</div>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon weddings">🎉</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>Multi-event clients</div>
-        <div class="change-desc">Clients can now have multiple events (Wedding, Mehendi, Haldi, After Party, Sadhya Dinner, High Tea, Breakfast, Lunch, Other). Each event has its own date and headcount. "Other" shows a custom text field.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon green">✅</div>
+        <div><div class="feature-name">Completing and managing tasks</div></div>
+      </div>
+      <div class="feature-body">
+        <p>Tick the checkbox to mark a task done. An <strong>Undo</strong> bar appears for 8 seconds if you ticked it by mistake. Tasks done more than 7 days ago move to the archive — tap <strong>Show archived</strong> at the bottom of the column to see them.</p>
+        <p>Tasks highlighted in <span style="color:#b37700">amber</span> are more than 7 days old and haven't been completed — time to act or remove them.</p>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon weddings">📁</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label weddings">Weddings</span>File uploads</div>
-        <div class="change-desc">Attach PDFs, menus, and invoices directly to a client card (up to 25 MB). Files are stored in Supabase and can be previewed or downloaded from the Files tab.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon green">🔍</div>
+        <div><div class="feature-name">Views and search</div></div>
+      </div>
+      <div class="feature-body">
+        <p><strong>Active</strong> — all open tasks across the whole team.<br>
+        <strong>Due Today</strong> — only tasks with today's date, across all people.<br>
+        <strong>Last Week</strong> — tasks completed in the last 7 days. Useful for standups.</p>
+        <p>The search bar at the top filters across all columns instantly.</p>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon todos">✅</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label todos">Todos</span>Team todo list</div>
-        <div class="change-desc">A full team task board with columns for each person (Pawan, Pooja, Arunabh, Akshat, Anahita, Mei, Bertha, Yuli, Vicky). Supports priorities, categories, due dates, recurring tasks, Big Rocks, search, undo, and archive.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon green">🔁</div>
+        <div><div class="feature-name">Recurring task separator</div></div>
+      </div>
+      <div class="feature-body">
+        <p>Each column now shows a <strong>— Recurring —</strong> line separating one-off tasks (above) from repeating ones (below). New tasks always land above the line so they're easy to spot.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- GROUPS -->
+  <div class="section" id="groups">
+    <div class="section-eyebrow">Travel Agents & ODC</div>
+    <div class="section-title">Group bookings tracker</div>
+    <div class="section-intro">Track group bookings and outdoor catering across all three venues. Switch between a calendar view and a list view.</div>
+
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon blue">➕</div>
+        <div><div class="feature-name">Adding a booking</div></div>
+      </div>
+      <div class="feature-body">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-text">Tap <strong>+ New Booking</strong> and fill in the agent name, venue, date, and pax count.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">For venues not in the list, select <strong>Other</strong> and type the venue name.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">Add a status note — e.g. "Deposit received", "Pending menu", "Confirmed".</div></div>
+        </div>
       </div>
     </div>
 
-    <div class="change">
-      <div class="change-icon todos">⏰</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label todos">Todos</span>Reminders sync from pipeline</div>
-        <div class="change-desc">Setting a reminder on a client in the Wedding pipeline assigns a task to the chosen team member automatically. Shows up in their todo column with the client name.</div>
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon blue">🗓</div>
+        <div><div class="feature-name">Calendar vs list view</div></div>
+      </div>
+      <div class="feature-body">
+        <p><strong>Calendar</strong> — shows the current month in a grid. Tap any day to see bookings. Use the arrows to move between months.</p>
+        <p><strong>List</strong> — shows all bookings in date order. Toggle <strong>Show all months</strong> to see past and future bookings beyond the current month.</p>
       </div>
     </div>
+  </div>
 
-    <div class="change">
-      <div class="change-icon groups">🗓</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label groups">Groups</span>Travel Agents &amp; ODC tracker</div>
-        <div class="change-desc">Calendar and list view for group bookings across The Chowk Ubud, Sanur, and Taman Gita. Supports custom venues, multi-month navigation, and booking status labels.</div>
+  <hr class="divider"/>
+
+  <!-- IMPORT -->
+  <div class="section" id="import">
+    <div class="section-eyebrow">Platform</div>
+    <div class="section-title">Bulk import via Excel <span class="new-badge">New</span></div>
+    <div class="section-intro">Use this when you have a list of new clients to add all at once — faster than entering them one by one.</div>
+
+    <div class="feature">
+      <div class="feature-header">
+        <div class="feature-icon grey">📋</div>
+        <div><div class="feature-name">How to use the import template</div></div>
       </div>
-    </div>
-
-    <div class="change">
-      <div class="change-icon platform">🏠</div>
-      <div class="change-body">
-        <div class="change-title"><span class="tool-label platform">Platform</span>Home page &amp; Supabase sync</div>
-        <div class="change-desc">All three tools (Weddings, Todos, Groups) now share a home screen. All data is stored in Supabase so it's live across every device — no more local storage.</div>
+      <div class="feature-body">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-text">Go to <strong>Import Template</strong> from the home screen and tap <strong>Download Excel Template</strong>.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">Open the file in Excel or Numbers. Fill in one row per event. The <strong>Stage</strong> and <strong>Event Type</strong> columns have dropdowns — use them to avoid spelling mistakes.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">If a client has multiple events (e.g. Wedding + Mehendi), add one row per event and repeat the client name exactly in each row.</div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-text">Save the file and upload it back on the same page — drag and drop or click to select. A preview table shows what will be added.</div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-text">Tap <strong>Add to Pipeline</strong> to confirm. Clients appear in the pipeline immediately.</div></div>
+        </div>
+        <div class="tip"><strong>Date format:</strong> Always use DD MM YYYY with spaces — e.g. <kbd>15 11 2026</kbd>. Est. Value is just the number — <kbd>1.5</kbd> means IDR 1.5mn.</div>
       </div>
     </div>
   </div>
