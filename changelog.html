@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>The Chowk — What's New</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--border:#e3e0d8;--ok:#2e7d32;--blue:#1565c0}
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);min-height:100vh}
+header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+header h1{font-size:16px;flex:1;margin:0}
+.page{max-width:640px;margin:0 auto;padding:28px 20px 60px}
+/* Release block */
+.release{margin-bottom:36px}
+.release-header{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.release-date{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.release-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--accent);color:#fff;letter-spacing:.04em}
+.release-tag.minor{background:#e8f0fb;color:var(--blue)}
+/* Change item */
+.change{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.change:last-child{border-bottom:none}
+.change-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px}
+.change-icon.weddings{background:#fdf0e8}
+.change-icon.todos{background:#e8f5e9}
+.change-icon.groups{background:#e8f0fb}
+.change-icon.platform{background:#f3f0eb}
+.change-body{}
+.change-title{font-size:13px;font-weight:600;color:var(--ink);line-height:1.4}
+.change-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.55}
+.tool-label{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;margin-right:5px;vertical-align:middle}
+.tool-label.weddings{background:#fdf0e8;color:var(--accent)}
+.tool-label.todos{background:#e8f5e9;color:var(--ok)}
+.tool-label.groups{background:#e8f0fb;color:var(--blue)}
+.tool-label.platform{background:#ede9e3;color:#555}
+/* Divider */
+hr{border:none;border-top:1px solid var(--border);margin:8px 0 24px}
+</style>
+</head>
+<body>
+<header>
+  <a href="/home.html" style="color:var(--accent);text-decoration:none;font-size:20px;margin-right:4px">⌂</a>
+  <h1>📋 What's New</h1>
+</header>
+
+<div class="page">
+
+  <div class="release">
+    <div class="release-header">
+      <span class="release-date">27 Jul 2026</span>
+      <span class="release-tag">Latest</span>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">💰</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>Deposit Tracker</div>
+        <div class="change-desc">New Deposits tab in the Wedding & Events pipeline. Track deposit amounts, dates, and notes per client. Live balance and status (Awaiting / Partial / Paid in Full) with summary totals at the top. Saves automatically.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">📊</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>Monthly bar — three segments</div>
+        <div class="change-desc">The 600mn revenue bar in monthly view now shows three colours: blue for Completed (delivered), green for Confirmed (signed, upcoming), yellow for Pipeline (in progress). The label below shows the breakdown.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">📈</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>Pipeline summary bar split</div>
+        <div class="change-desc">The bar above the kanban now shows Pipeline, Confirmed, and Completed as separate numbers — so revenue that's been delivered no longer gets counted alongside upcoming bookings.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon todos">🔁</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label todos">Todos</span>Recurring task separator</div>
+        <div class="change-desc">Each person's column now shows a "Recurring" divider line between one-off tasks and repeating ones, so daily/weekly/monthly tasks don't visually mix with new work.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon platform">📋</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label platform">Platform</span>Excel import template</div>
+        <div class="change-desc">Download a formatted Excel file with Stage and Event Type dropdowns, fill it in, and upload it directly to add clients to the pipeline. No CSV conversion needed.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">🗓</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>Monthly view — Today button &amp; nav arrows</div>
+        <div class="change-desc">Back / Forward buttons navigate by 12 months. A Today button (greyed out when already on current window) snaps back instantly from wherever you've scrolled.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr/>
+
+  <div class="release">
+    <div class="release-header">
+      <span class="release-date">Jun – Jul 2026</span>
+      <span class="release-tag minor">Earlier</span>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">📅</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>Monthly pipeline view</div>
+        <div class="change-desc">A second view alongside the kanban that shows the next 12 months as columns, with clients grouped by their event date. Each column has a 600mn revenue progress bar.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">💍</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>Estimated value on cards</div>
+        <div class="change-desc">Est. Value (IDR mn) field added to each client. Shows on kanban cards and monthly columns. Pipeline summary bar above the kanban totals all active, confirmed, and completed values.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">✅</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>Completed stage</div>
+        <div class="change-desc">A Completed column added after Lost for events that have happened. Moves confirmed revenue into a separate bucket in the summary bar and monthly bars.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">🎉</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>Multi-event clients</div>
+        <div class="change-desc">Clients can now have multiple events (Wedding, Mehendi, Haldi, After Party, Sadhya Dinner, High Tea, Breakfast, Lunch, Other). Each event has its own date and headcount. "Other" shows a custom text field.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon weddings">📁</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label weddings">Weddings</span>File uploads</div>
+        <div class="change-desc">Attach PDFs, menus, and invoices directly to a client card (up to 25 MB). Files are stored in Supabase and can be previewed or downloaded from the Files tab.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon todos">✅</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label todos">Todos</span>Team todo list</div>
+        <div class="change-desc">A full team task board with columns for each person (Pawan, Pooja, Arunabh, Akshat, Anahita, Mei, Bertha, Yuli, Vicky). Supports priorities, categories, due dates, recurring tasks, Big Rocks, search, undo, and archive.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon todos">⏰</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label todos">Todos</span>Reminders sync from pipeline</div>
+        <div class="change-desc">Setting a reminder on a client in the Wedding pipeline assigns a task to the chosen team member automatically. Shows up in their todo column with the client name.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon groups">🗓</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label groups">Groups</span>Travel Agents &amp; ODC tracker</div>
+        <div class="change-desc">Calendar and list view for group bookings across The Chowk Ubud, Sanur, and Taman Gita. Supports custom venues, multi-month navigation, and booking status labels.</div>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-icon platform">🏠</div>
+      <div class="change-body">
+        <div class="change-title"><span class="tool-label platform">Platform</span>Home page &amp; Supabase sync</div>
+        <div class="change-desc">All three tools (Weddings, Todos, Groups) now share a home screen. All data is stored in Supabase so it's live across every device — no more local storage.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
