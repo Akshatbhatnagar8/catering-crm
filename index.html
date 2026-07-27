@@ -139,6 +139,14 @@ function render(){
   const board=document.getElementById("board");board.innerHTML="";
   board.style.flexDirection="";board.style.flexWrap="";board.style.padding="";board.style.gap="";board.style.overflow="";
   if(crmView==="monthly"){renderMonthly(board);renderAlerts();return;}
+  // pipeline summary bar
+  const active=data.clients.filter(c=>c.stage!=="Lost"&&c.stage!=="Completed");
+  const pipelineVal=active.reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+  const confirmedVal=data.clients.filter(c=>c.stage==="Confirmed"||c.stage==="Completed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
+  const summBar=document.createElement("div");
+  summBar.style.cssText="width:100%;padding:6px 16px 0;font-size:12px;color:#555;display:flex;gap:16px;flex-shrink:0";
+  summBar.innerHTML=`<span>Pipeline: <strong>IDR ${pipelineVal.toFixed(1)}mn</strong></span><span style="color:#2e7d32">Confirmed: <strong>IDR ${confirmedVal.toFixed(1)}mn</strong></span>`;
+  board.appendChild(summBar);
   STAGES.forEach(s=>{
     const col=document.createElement("div");col.className="col";
     const list=data.clients.filter(c=>c.stage===s);
@@ -192,9 +200,11 @@ function renderMonthly(board){
   btnBack.addEventListener("click",()=>{monthOffset=Math.max(0,monthOffset-12);render();});
   const navLabel=document.createElement("span");navLabel.style.cssText="font-size:13px;color:#666;flex:1;text-align:center";
   navLabel.textContent=`${MONTHS[startD.getMonth()]} ${startD.getFullYear()} — ${MONTHS[endD.getMonth()]} ${endD.getFullYear()}`;
+  const btnToday=document.createElement("button");btnToday.className="ghost";btnToday.style.cssText="padding:6px 10px;font-size:11px"+(monthOffset===0?";opacity:0.3;cursor:default":"");btnToday.textContent="Today";
+  btnToday.addEventListener("click",()=>{if(monthOffset===0)return;monthOffset=0;render();});
   const btnFwd=document.createElement("button");btnFwd.className="ghost";btnFwd.style.cssText="padding:6px 14px;font-size:16px";btnFwd.textContent="Forward ›";
   btnFwd.addEventListener("click",()=>{monthOffset+=12;render();});
-  nav.appendChild(btnBack);nav.appendChild(navLabel);nav.appendChild(btnFwd);
+  nav.appendChild(btnBack);nav.appendChild(navLabel);nav.appendChild(btnToday);nav.appendChild(btnFwd);
   board.appendChild(nav);
 
   // inner scrollable row for columns
