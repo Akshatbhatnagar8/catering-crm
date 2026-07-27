@@ -240,6 +240,9 @@ function renderActive(root){
 
 function sortFn(a,b){
   if(a.done!==b.done)return a.done?1:-1;
+  // recurring tasks go below one-off tasks
+  const aRec=a.recurring?1:0,bRec=b.recurring?1:0;
+  if(aRec!==bRec)return aRec-bRec;
   const pr={high:0,med:1,low:2};
   if(pr[a.priority]!==pr[b.priority])return pr[a.priority]-pr[b.priority];
   return (a.due||"9999").localeCompare(b.due||"9999");
