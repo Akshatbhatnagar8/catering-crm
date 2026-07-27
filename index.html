@@ -94,6 +94,7 @@ let data={clients:[]};
 let editingId=null,activeTab="details";
 let saveTimer=null;
 let crmView="pipeline";
+let monthOffset=0;
 const dirty=new Set();
 const deleted=new Set();
 
@@ -173,8 +174,21 @@ function renderAlerts(){
 function renderMonthly(board){
   const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const now=new Date();
+
+  // nav bar
+  const nav=document.createElement("div");
+  nav.style.cssText="display:flex;align-items:center;gap:10px;padding:0 16px 12px;flex-shrink:0;width:100%";
+  const startD=new Date(now.getFullYear(),now.getMonth()+monthOffset,1);
+  const endD=new Date(now.getFullYear(),now.getMonth()+monthOffset+11,1);
+  nav.innerHTML=`
+    <button class="ghost" style="padding:6px 14px;font-size:16px" onclick="monthOffset=Math.max(0,monthOffset-12);render()">‹ Back</button>
+    <span style="font-size:13px;color:#666;flex:1;text-align:center">${MONTHS[startD.getMonth()]} ${startD.getFullYear()} — ${MONTHS[endD.getMonth()]} ${endD.getFullYear()}</span>
+    <button class="ghost" style="padding:6px 14px;font-size:16px" onclick="monthOffset+=12;render()">Forward ›</button>`;
+  board.appendChild(nav);
+  board.style.flexWrap="nowrap";
+
   for(let i=0;i<12;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const d=new Date(now.getFullYear(),now.getMonth()+monthOffset+i,1);
     const y=d.getFullYear(),m=d.getMonth();
     const key=`${y}-${String(m+1).padStart(2,"0")}`;
     // clients with at least one event in this month
