@@ -59,6 +59,7 @@ textarea{min-height:60px;resize:vertical}
 </header>
 
 <div id="alertBox"></div>
+<div id="summaryBar" style="padding:4px 20px 0;font-size:12px;color:#555;display:none;gap:16px"></div>
 <div class="board" id="board"></div>
 
 <div class="modal" id="modal"><div class="dialog" id="dialogBody"></div></div>
@@ -138,15 +139,14 @@ window._shiftMonth=function(n){monthOffset=Math.max(0,monthOffset+n);render();};
 function render(){
   const board=document.getElementById("board");board.innerHTML="";
   board.style.flexDirection="";board.style.flexWrap="";board.style.padding="";board.style.gap="";board.style.overflow="";
-  if(crmView==="monthly"){renderMonthly(board);renderAlerts();return;}
+  const sb=document.getElementById("summaryBar");
+  if(crmView==="monthly"){sb.style.display="none";renderMonthly(board);renderAlerts();return;}
   // pipeline summary bar
   const active=data.clients.filter(c=>c.stage!=="Lost"&&c.stage!=="Completed");
   const pipelineVal=active.reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
   const confirmedVal=data.clients.filter(c=>c.stage==="Confirmed"||c.stage==="Completed").reduce((a,c)=>a+(parseFloat(c.estValue)||0),0);
-  const summBar=document.createElement("div");
-  summBar.style.cssText="width:100%;padding:6px 16px 0;font-size:12px;color:#555;display:flex;gap:16px;flex-shrink:0";
-  summBar.innerHTML=`<span>Pipeline: <strong>IDR ${pipelineVal.toFixed(1)}mn</strong></span><span style="color:#2e7d32">Confirmed: <strong>IDR ${confirmedVal.toFixed(1)}mn</strong></span>`;
-  board.appendChild(summBar);
+  sb.style.display="flex";
+  sb.innerHTML=`<span>Pipeline: <strong>IDR ${pipelineVal.toFixed(1)}mn</strong></span><span style="color:#2e7d32">Confirmed: <strong>IDR ${confirmedVal.toFixed(1)}mn</strong></span>`;
   STAGES.forEach(s=>{
     const col=document.createElement("div");col.className="col";
     const list=data.clients.filter(c=>c.stage===s);
