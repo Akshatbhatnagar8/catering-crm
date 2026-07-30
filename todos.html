@@ -75,6 +75,25 @@ button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 .dialog .row{display:flex;gap:8px}
 .dialog .row>div{flex:1}
 .dialog .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+/* mobile person picker */
+#personPicker{display:none;gap:6px;padding:10px 14px;overflow-x:auto;background:#fff;border-bottom:1px solid var(--border);scrollbar-width:none;flex-shrink:0}
+#personPicker::-webkit-scrollbar{display:none}
+#personPicker button{white-space:nowrap;padding:8px 16px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:#fff;color:#555;flex-shrink:0;cursor:pointer;font-family:inherit}
+#personPicker button.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+@media(max-width:640px){
+  #personPicker{display:flex}
+  header{gap:8px;padding:10px 12px;flex-wrap:wrap}
+  header h1{font-size:14px;min-width:0}
+  header .toggle button{padding:5px 7px;font-size:11px}
+  #searchBar{width:110px;font-size:12px}
+  .board{padding:8px;overflow-x:hidden}
+  .col{min-width:100%;width:100%;display:none}
+  .col.mob-show{display:flex}
+  .todo .x,.todo .ed{min-width:32px;min-height:32px;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0}
+  .add .row2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  .add .row2 input[type=date]{grid-column:1/-1}
+  .add .rock{grid-column:1/-1}
+}
 </style>
 </head>
 <body>
@@ -107,7 +126,8 @@ const STALE_DAYS=7;
 
 let todos=[],clients=[];
 let view="active";
-let showArchive={}; // per-person archive toggle
+let showArchive={};
+let mobilePerson=PEOPLE[0];
 const dirty=new Set(),deleted=new Set();
 let saveTimer=null;
 
@@ -180,6 +200,19 @@ function render(){
 const ARCHIVE_DAYS=7; // done tasks older than this are archived
 
 function renderActive(root){
+  const isMobile=window.innerWidth<=640;
+  if(!PEOPLE.includes(mobilePerson))mobilePerson=PEOPLE[0];
+
+  const picker=document.createElement("div");picker.id="personPicker";
+  PEOPLE.forEach(p=>{
+    const btn=document.createElement("button");
+    btn.textContent=p;
+    if(p===mobilePerson)btn.className="sel";
+    btn.addEventListener("click",()=>{mobilePerson=p;render();});
+    picker.appendChild(btn);
+  });
+  root.appendChild(picker);
+
   const board=document.createElement("div");board.className="board";
   const q=searchQ();
   PEOPLE.forEach(p=>{
@@ -191,6 +224,7 @@ function renderActive(root){
     const others=visible.filter(t=>!t.bigRock).sort(sortFn);
     const openCount=visible.filter(t=>!t.done).length;
     const col=document.createElement("div");col.className="col";
+    if(isMobile&&p===mobilePerson)col.classList.add("mob-show");
     col.innerHTML=`<h3>${p}<span class="count ${openCount>ACTIVE_CAP?"over":""}">${openCount}</span></h3>`;
 
     // Add form
