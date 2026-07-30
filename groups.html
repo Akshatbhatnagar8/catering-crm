@@ -147,6 +147,7 @@ const STATUSES=["","New","Confirmed","Pending","Completed","Cancelled"];
 const MENUS=["Custom Menu","V1/NV1","V2/NV2","V3/NV2","V4","V5/NV5","Other"];
 
 let bookings=[];
+const cutoff=new Date(Date.now()-7*86400000).toISOString();
 let cur=new Date();cur.setDate(1);
 let view="cal";
 let showAll=false;
@@ -200,10 +201,12 @@ function renderSummary(){
   const rev=s=>mb.filter(b=>b.status===s).reduce((a,b)=>a+bookingRevenue(b),0);
   const confirmed=rev("Confirmed"),pending=rev("Pending"),newRev=rev("New"),completed=rev("Completed");
   const total=confirmed+pending+newRev+completed;
+  const recentCount=bookings.filter(b=>b.createdAt&&b.createdAt>=cutoff).length;
   document.getElementById("summaryBar").innerHTML=`
     <div class="stat"><div class="val">${mb.length}</div><div class="lbl">Bookings</div></div>
     <div class="stat"><div class="val">${pax}</div><div class="lbl">Total Pax</div></div>
     <div class="stat"><div class="val">${agents}</div><div class="lbl">Agents</div></div>
+    <div class="stat"><div class="val" style="color:#b8541a">${recentCount}</div><div class="lbl">Added This Week</div></div>
     <div class="stat"><div class="val" style="color:#1a237e">IDR ${completed.toFixed(1)}mn</div><div class="lbl">Completed</div></div>
     <div class="stat"><div class="val" style="color:#2e7d32">IDR ${confirmed.toFixed(1)}mn</div><div class="lbl">Confirmed</div></div>
     <div class="stat"><div class="val" style="color:#b8860b">IDR ${pending.toFixed(1)}mn</div><div class="lbl">Pending</div></div>
@@ -261,7 +264,7 @@ function renderList(root){
     <tbody>${source.map(b=>`<tr>
       <td>${fmtDate(b.date)}</td>
       <td>${esc(b.time)}</td>
-      <td>${esc(b.company)}</td>
+      <td>${esc(b.company)}${b.createdAt&&b.createdAt>=cutoff?` <span class="badge" style="background:#b8541a;font-size:9px">NEW</span>`:""}</td>
       <td>${esc(b.groupCode)}</td>
       <td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${venueColor(b.venue)};flex-shrink:0"></span>${esc(venueLabel(b))}</span></td>
       <td>${esc(b.description)}</td>
@@ -354,6 +357,7 @@ async function saveForm(){
   const venueVal=g("f_venue");
   const b={
     id:existing?existing.id:uid(),
+    createdAt:existing?.createdAt||new Date().toISOString(),
     company:g("f_company"),groupCode:g("f_groupCode"),
     date:g("f_date"),time:g("f_time"),
     venue:venueVal,
