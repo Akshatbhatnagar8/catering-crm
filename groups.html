@@ -173,10 +173,14 @@ async function loadAll(){
 }
 async function autoComplete(){
   const yesterday=toISO(new Date(Date.now()-86400000));
-  const toFlip=bookings.filter(b=>b.status==="Confirmed"&&b.date&&b.date<=yesterday);
-  if(!toFlip.length)return;
-  toFlip.forEach(b=>{b.status="Completed"});
-  await Promise.all(toFlip.map(b=>upsert(b)));
+  const sevenDaysAgo=new Date(Date.now()-7*86400000).toISOString();
+  const toComplete=bookings.filter(b=>b.status==="Confirmed"&&b.date&&b.date<=yesterday);
+  const toPend=bookings.filter(b=>b.status==="New"&&b.createdAt&&b.createdAt<=sevenDaysAgo);
+  const all=[...toComplete,...toPend];
+  if(!all.length)return;
+  toComplete.forEach(b=>{b.status="Completed"});
+  toPend.forEach(b=>{b.status="Pending"});
+  await Promise.all(all.map(b=>upsert(b)));
 }
 async function upsert(b){await sb.from("groups").upsert({id:b.id,data:b})}
 async function del(id){bookings=bookings.filter(x=>x.id!==id);await sb.from("groups").delete().eq("id",id);render()}
