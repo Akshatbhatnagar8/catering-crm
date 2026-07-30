@@ -143,7 +143,7 @@ const VENUES=[
 ];
 const VENUE_COLOR=Object.fromEntries(VENUES.map(v=>[v.name,v.color]));
 const TIMES=["Lunch","Dinner","Hi Tea","Gala Dinner","Breakfast","Other"];
-const STATUSES=["","New","Confirmed","Cancelled","Pending"];
+const STATUSES=["","New","Confirmed","Pending","Completed","Cancelled"];
 const MENUS=["Custom Menu","V1/NV1","V2/NV2","V3/NV2","V4","V5/NV5","Other"];
 
 let bookings=[];
@@ -153,6 +153,8 @@ let showAll=false;
 let editingId=null;
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const statusColor=s=>({Confirmed:"#2e7d32",New:"#1565c0",Pending:"#b8860b",Completed:"#1a237e",Cancelled:"#c0392b"}[s]||"#888");
+const bookingRevenue=b=>(parseFloat(b.rate)||0)*totalPax(b);
 const pad=n=>String(n).padStart(2,"0");
 const fmtDate=d=>{if(!d)return"";const[y,m,da]=d.split("-");return`${da} ${m} ${y}`};
 const toISO=d=>d?d.toISOString().slice(0,10):"";
@@ -165,7 +167,15 @@ async function loadAll(){
   const{data:rows,error}=await sb.from("groups").select("data").order("updated_at",{ascending:false});
   if(error){alert("Load failed: "+error.message);return}
   bookings=(rows||[]).map(r=>r.data);
+  await autoComplete();
   render();
+}
+async function autoComplete(){
+  const yesterday=toISO(new Date(Date.now()-86400000));
+  const toFlip=bookings.filter(b=>b.status==="Confirmed"&&b.date&&b.date<=yesterday);
+  if(!toFlip.length)return;
+  toFlip.forEach(b=>{b.status="Completed"});
+  await Promise.all(toFlip.map(b=>upsert(b)));
 }
 async function upsert(b){await sb.from("groups").upsert({id:b.id,data:b})}
 async function del(id){bookings=bookings.filter(x=>x.id!==id);await sb.from("groups").delete().eq("id",id);render()}
@@ -187,11 +197,18 @@ function renderSummary(){
   const pax=mb.reduce((a,b)=>a+totalPax(b),0);
   const venues=[...new Set(mb.map(b=>b.venue))].length;
   const agents=[...new Set(mb.map(b=>b.company).filter(Boolean))].length;
+  const rev=s=>mb.filter(b=>b.status===s).reduce((a,b)=>a+bookingRevenue(b),0);
+  const confirmed=rev("Confirmed"),pending=rev("Pending"),newRev=rev("New"),completed=rev("Completed");
+  const total=confirmed+pending+newRev+completed;
   document.getElementById("summaryBar").innerHTML=`
     <div class="stat"><div class="val">${mb.length}</div><div class="lbl">Bookings</div></div>
     <div class="stat"><div class="val">${pax}</div><div class="lbl">Total Pax</div></div>
-    <div class="stat"><div class="val">${agents}</div><div class="lbl">Travel Agents</div></div>
-    <div class="stat"><div class="val">${venues}</div><div class="lbl">Venues</div></div>`;
+    <div class="stat"><div class="val">${agents}</div><div class="lbl">Agents</div></div>
+    <div class="stat"><div class="val" style="color:#1a237e">IDR ${completed.toFixed(1)}mn</div><div class="lbl">Completed</div></div>
+    <div class="stat"><div class="val" style="color:#2e7d32">IDR ${confirmed.toFixed(1)}mn</div><div class="lbl">Confirmed</div></div>
+    <div class="stat"><div class="val" style="color:#b8860b">IDR ${pending.toFixed(1)}mn</div><div class="lbl">Pending</div></div>
+    <div class="stat"><div class="val" style="color:#1565c0">IDR ${newRev.toFixed(1)}mn</div><div class="lbl">New</div></div>
+    <div class="stat"><div class="val">IDR ${total.toFixed(1)}mn</div><div class="lbl">Total Pipeline</div></div>`;
 }
 function renderLegend(){
   document.getElementById("legend").innerHTML=VENUES.map(v=>
@@ -239,7 +256,7 @@ function renderList(root){
   <table>
     <thead><tr>
       <th>Date</th><th>Time</th><th>Company</th><th>Group</th>
-      <th>Venue</th><th>Menu</th><th>Adult</th><th>Child</th><th>FOC</th><th>Status</th><th></th>
+      <th>Venue</th><th>Menu</th><th>Adult</th><th>Child</th><th>FOC</th><th>Est. Rev</th><th>Status</th><th></th>
     </tr></thead>
     <tbody>${source.map(b=>`<tr>
       <td>${fmtDate(b.date)}</td>
@@ -251,7 +268,8 @@ function renderList(root){
       <td style="text-align:center">${b.adult||""}</td>
       <td style="text-align:center">${b.child||""}</td>
       <td style="text-align:center">${b.foc||""}</td>
-      <td>${b.status?`<span class="badge new">${esc(b.status)}</span>`:""}</td>
+      <td style="text-align:right;font-size:12px">${bookingRevenue(b)?`IDR ${bookingRevenue(b).toFixed(1)}mn`:""}</td>
+      <td>${b.status?`<span class="badge" style="background:${statusColor(b.status)}">${esc(b.status)}</span>`:""}</td>
       <td style="white-space:nowrap">
         <button class="ghost" style="padding:3px 8px;font-size:11px" onclick="openEdit('${b.id}')">Edit</button>
         <button class="ghost" style="padding:3px 8px;font-size:11px;color:#c0392b" onclick="if(confirm('Delete?'))delBook('${b.id}')">×</button>
@@ -271,7 +289,7 @@ function openDay(iso,dayBks){
         <div class="venue-bar" style="background:${venueColor(b.venue)}"></div>
         <div class="db-main">
           <div class="db-title">${esc(b.company)}${b.groupCode?` <span style="font-weight:400;color:#888">· ${esc(b.groupCode)}</span>`:""}
-            ${b.status?`<span class="badge new" style="margin-left:6px">${esc(b.status)}</span>`:""}
+            ${b.status?`<span class="badge" style="margin-left:6px;background:${statusColor(b.status)}">${esc(b.status)}</span>`:""}
           </div>
           <div class="db-meta">
             <span>🕐 ${esc(b.time)}</span>
@@ -297,7 +315,7 @@ function openAdd(prefillDate=""){editingId=null;renderForm(null,prefillDate)}
 function openEdit(id){editingId=id;const b=bookings.find(x=>x.id===id);renderForm(b)}
 function renderForm(b,prefillDate=""){
   const dlg=document.getElementById("formDialog");
-  const v=b||{id:"",company:"",groupCode:"",date:prefillDate,time:"Lunch",venue:"The Chowk Ubud",description:"",adult:"",child:"",foc:"",status:"",notes:""};
+  const v=b||{id:"",company:"",groupCode:"",date:prefillDate,time:"Lunch",venue:"The Chowk Ubud",description:"",adult:"",child:"",foc:"",status:"",notes:"",rate:""};
   dlg.innerHTML=`<h2>${b?"Edit Booking":"New Booking"}</h2>
     <div class="row">
       <div><label>Company / Travel Agent</label><input id="f_company" value="${esc(v.company)}"/></div>
@@ -312,9 +330,14 @@ function renderForm(b,prefillDate=""){
     <label>Menu / Description</label><select id="f_desc">${MENUS.map(m=>`<option ${m===v.description?"selected":""}>${m}</option>`).join("")}</select>
     <label>Pax</label>
     <div class="pax-row">
-      <div><label>Adult</label><input type="number" id="f_adult" value="${v.adult||""}" min="0"/></div>
-      <div><label>Child</label><input type="number" id="f_child" value="${v.child||""}" min="0"/></div>
-      <div><label>FOC</label><input type="number" id="f_foc" value="${v.foc||""}" min="0"/></div>
+      <div><label>Adult</label><input type="number" id="f_adult" value="${v.adult||""}" min="0" oninput="_calcRev()"/></div>
+      <div><label>Child</label><input type="number" id="f_child" value="${v.child||""}" min="0" oninput="_calcRev()"/></div>
+      <div><label>FOC</label><input type="number" id="f_foc" value="${v.foc||""}" min="0" oninput="_calcRev()"/></div>
+    </div>
+    <label>Rate per Person (IDR mn, net of tax)</label>
+    <input type="number" id="f_rate" value="${v.rate||""}" min="0" step="0.01" placeholder="e.g. 0.35" oninput="_calcRev()"/>
+    <div style="font-size:12px;color:#666;margin-top:5px;padding:6px 8px;background:#f6f5f1;border-radius:6px">
+      Est. Revenue: <strong id="f_revPreview">${bookingRevenue(v)?`IDR ${bookingRevenue(v).toFixed(2)}mn`:"—"}</strong>
     </div>
     <label>Booking Status</label><select id="f_status">${STATUSES.map(s=>`<option ${s===v.status?"selected":""}>${s}</option>`).join("")}</select>
     <label>Notes</label><textarea id="f_notes" rows="2">${esc(v.notes)}</textarea>
@@ -336,7 +359,7 @@ async function saveForm(){
     venue:venueVal,
     customVenue:venueVal==="Other"?(g("f_venueCustom")||""):"",
     description:g("f_desc"),adult:g("f_adult"),child:g("f_child"),foc:g("f_foc"),
-    status:g("f_status"),notes:g("f_notes")
+    rate:g("f_rate"),status:g("f_status"),notes:g("f_notes")
   };
   if(existing){const i=bookings.indexOf(existing);bookings[i]=b}else bookings.push(b);
   await upsert(b);
@@ -356,6 +379,13 @@ document.querySelectorAll("#viewToggle button").forEach(b=>b.onclick=()=>{
 document.getElementById("dayModal").onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove("show")};
 document.getElementById("formModal").onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove("show")};
 
+window._calcRev=function(){
+  const rate=parseFloat(document.getElementById("f_rate")?.value)||0;
+  const pax=(parseInt(document.getElementById("f_adult")?.value)||0)+(parseInt(document.getElementById("f_child")?.value)||0)+(parseInt(document.getElementById("f_foc")?.value)||0);
+  const rev=rate*pax;
+  const el=document.getElementById("f_revPreview");
+  if(el)el.textContent=rev>0?`IDR ${rev.toFixed(2)}mn`:"—";
+};
 Object.assign(window,{openAdd,openEdit,delBook,saveForm});
 loadAll();
 </script>
