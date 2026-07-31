@@ -244,7 +244,7 @@ function renderCal(root){
     const dayBks=(byDay[iso]||[]).sort((a,b)=>a.time.localeCompare(b.time));
     const pax=dayBks.reduce((a,b)=>a+totalPax(b),0);
     cell.innerHTML=`<div class="day-num">${d}</div><div class="pills">${
-      dayBks.slice(0,3).map(b=>`<div class="pill-row" style="background:${venueColor(b.venue)}" title="${esc(b.company)} — ${b.time}">${esc(b.company||b.groupCode||"Booking")}</div>`).join("")
+      dayBks.slice(0,3).map(b=>`<div class="pill-row" style="background:${venueColor(b.venue)}" title="${esc(b.company)} — ${b.time}">${b.status==="Confirmed"?"✓ ":b.status==="Pending"?"⏳ ":""}${esc(b.company||b.groupCode||"Booking")}</div>`).join("")
       }${dayBks.length>3?`<div style="font-size:9px;color:#999;margin-top:1px">+${dayBks.length-3} more</div>`:""}</div>
       ${pax?`<div class="pax-total">${pax} pax</div>`:""}`;
     cell.onclick=()=>openDay(iso,dayBks);
