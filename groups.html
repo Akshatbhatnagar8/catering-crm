@@ -175,7 +175,7 @@ async function autoComplete(){
   const yesterday=toISO(new Date(Date.now()-86400000));
   const sevenDaysAgo=new Date(Date.now()-7*86400000).toISOString();
   const toComplete=bookings.filter(b=>b.status==="Confirmed"&&b.date&&b.date<=yesterday);
-  const toPend=bookings.filter(b=>b.status==="New"&&b.createdAt&&b.createdAt<=sevenDaysAgo);
+  const toPend=bookings.filter(b=>(b.status==="New"&&b.createdAt&&b.createdAt<=sevenDaysAgo)||!b.status);
   const all=[...toComplete,...toPend];
   if(!all.length)return;
   toComplete.forEach(b=>{b.status="Completed"});
