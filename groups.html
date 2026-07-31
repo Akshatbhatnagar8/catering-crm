@@ -155,7 +155,7 @@ let editingId=null;
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const statusColor=s=>({Confirmed:"#2e7d32",New:"#1565c0",Pending:"#b8860b",Completed:"#1a237e",Cancelled:"#c0392b"}[s]||"#888");
-const bookingRevenue=b=>(parseFloat(b.rate)||0)*totalPax(b);
+const bookingRevenue=b=>(parseFloat(b.rate)||0)*totalPax(b)/1000000;
 const pad=n=>String(n).padStart(2,"0");
 const fmtDate=d=>{if(!d)return"";const[y,m,da]=d.split("-");return`${da} ${m} ${y}`};
 const toISO=d=>d?d.toISOString().slice(0,10):"";
@@ -341,8 +341,8 @@ function renderForm(b,prefillDate=""){
       <div><label>Child</label><input type="number" id="f_child" value="${v.child||""}" min="0" oninput="_calcRev()"/></div>
       <div><label>FOC</label><input type="number" id="f_foc" value="${v.foc||""}" min="0" oninput="_calcRev()"/></div>
     </div>
-    <label>Rate per Person (IDR mn, net of tax)</label>
-    <input type="number" id="f_rate" value="${v.rate||""}" min="0" step="0.01" placeholder="e.g. 0.35" oninput="_calcRev()"/>
+    <label>Rate per Person (IDR, net of tax)</label>
+    <input type="number" id="f_rate" value="${v.rate||""}" min="0" step="1000" placeholder="e.g. 350000" oninput="_calcRev()"/>
     <div style="font-size:12px;color:#666;margin-top:5px;padding:6px 8px;background:#f6f5f1;border-radius:6px">
       Est. Revenue: <strong id="f_revPreview">${bookingRevenue(v)?`IDR ${bookingRevenue(v).toFixed(2)}mn`:"—"}</strong>
     </div>
@@ -390,7 +390,7 @@ document.getElementById("formModal").onclick=e=>{if(e.target===e.currentTarget)e
 window._calcRev=function(){
   const rate=parseFloat(document.getElementById("f_rate")?.value)||0;
   const pax=(parseInt(document.getElementById("f_adult")?.value)||0)+(parseInt(document.getElementById("f_child")?.value)||0)+(parseInt(document.getElementById("f_foc")?.value)||0);
-  const rev=rate*pax;
+  const rev=rate*pax/1000000;
   const el=document.getElementById("f_revPreview");
   if(el)el.textContent=rev>0?`IDR ${rev.toFixed(2)}mn`:"—";
 };
