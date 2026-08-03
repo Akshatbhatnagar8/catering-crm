@@ -155,7 +155,7 @@ let editingId=null;
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const statusColor=s=>({Confirmed:"#2e7d32",New:"#1565c0",Pending:"#b8860b",Completed:"#1a237e",Cancelled:"#c0392b"}[s]||"#888");
-const bookingRevenue=b=>(parseFloat(b.rate)||0)*totalPax(b)/1000000;
+const bookingRevenue=b=>(parseFloat(b.rate)||0)*((+b.adult||0)+(+b.child||0)*0.5)/1000000;
 const pad=n=>String(n).padStart(2,"0");
 const fmtDate=d=>{if(!d)return"";const[y,m,da]=d.split("-");return`${da} ${m} ${y}`};
 const toISO=d=>d?d.toISOString().slice(0,10):"";
@@ -389,8 +389,9 @@ document.getElementById("formModal").onclick=e=>{if(e.target===e.currentTarget)e
 
 window._calcRev=function(){
   const rate=parseFloat(document.getElementById("f_rate")?.value)||0;
-  const pax=(parseInt(document.getElementById("f_adult")?.value)||0)+(parseInt(document.getElementById("f_child")?.value)||0)+(parseInt(document.getElementById("f_foc")?.value)||0);
-  const rev=rate*pax/1000000;
+  const adult=parseInt(document.getElementById("f_adult")?.value)||0;
+  const child=parseInt(document.getElementById("f_child")?.value)||0;
+  const rev=rate*(adult+child*0.5)/1000000;
   const el=document.getElementById("f_revPreview");
   if(el)el.textContent=rev>0?`IDR ${rev.toFixed(2)}mn`:"—";
 };
