@@ -190,11 +190,13 @@ function highlight(text,q){
 }
 
 function render(){
+  const prevScroll=document.querySelector(".board")?.scrollLeft||0;
   const main=document.getElementById("main");
   main.innerHTML="";
   if(view==="active")renderActive(main);
   else if(view==="today")renderToday(main);
   else renderWeek(main);
+  if(prevScroll)requestAnimationFrame(()=>{const b=document.querySelector(".board");if(b)b.scrollLeft=prevScroll;});
 }
 
 const ARCHIVE_DAYS=7; // done tasks older than this are archived
