@@ -149,10 +149,15 @@ async function loadAll(){
 
   (wRes.data||[]).forEach(r=>{
     const d=r.data;
-    if(!d||!d.date)return;
-    if(d.date<cutoff)return;
-    if(!["Confirmed","Pending"].includes(d.status))return;
-    events.push({id:"w_"+(d.id||d.name),type:"Wedding",name:d.name||d.company||"Wedding",date:d.date,status:d.status,raw:d});
+    if(!d)return;
+    if(!["Confirmed","Awaiting Confirmation","Menu Finalization"].includes(d.stage))return;
+    // each client may have multiple events; add one entry per event date
+    const evDates=(d.events||[]).map(e=>e.date).filter(Boolean);
+    if(!evDates.length)return;
+    evDates.forEach(date=>{
+      if(date<cutoff)return;
+      events.push({id:"w_"+d.id+"_"+date,type:"Wedding",name:d.name||"Wedding",date,status:d.stage,raw:d});
+    });
   });
   (gRes.data||[]).forEach(r=>{
     const d=r.data;
