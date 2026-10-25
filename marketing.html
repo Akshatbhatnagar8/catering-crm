@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>The Chowk - Marketing</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--border:#e3e0d8;--warn:#c0392b;--stale:#e6a700;--ok:#2e7d32}
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink)}
+a{text-decoration:none}
+header{background:#fff;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20}
+header h1{font-size:16px;margin:0;flex:1}
+button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
+button.danger{background:#fff;color:var(--warn);border:1px solid var(--border)}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);padding:0 20px;background:#fff;overflow-x:auto}
+.tab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .15s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--ink)}
+
+/* SUMMARY */
+.summary-bar{display:flex;gap:10px;padding:14px 20px;overflow-x:auto}
+.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:110px;text-align:center;flex-shrink:0}
+.stat .val{font-size:20px;font-weight:700;color:var(--accent)}
+.stat .lbl{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+
+/* GRID */
+.section{padding:0 20px 30px}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin:16px 0 12px}
+.section-hdr h2{font-size:14px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.empty{color:#aaa;font-size:13px;padding:30px 0;text-align:center;grid-column:1/-1}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .15s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.card.stale{border-color:var(--stale);box-shadow:0 0 0 1px var(--stale)}
+.card.archived{opacity:.6}
+.card-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#f0ede8;cursor:pointer}
+.card-img-placeholder{width:100%;aspect-ratio:4/3;background:#f0ede8;display:flex;align-items:center;justify-content:center;font-size:32px;color:#ccc}
+.card-body{padding:10px 12px}
+.card-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px;line-height:1.3}
+.card-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:600;background:#f0ede8;color:#666}
+.badge.stale-badge{background:#fff4d6;color:#b37700}
+.days{font-size:11px;color:var(--muted)}
+.stale-prompt{background:#fff4d6;border-radius:6px;padding:7px 10px;font-size:11px;color:#b37700;margin-bottom:8px;line-height:1.4}
+.card-actions{display:flex;gap:6px}
+.card-actions button{flex:1;padding:5px 8px;font-size:11px}
+
+/* ARCHIVE TOGGLE */
+.archive-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted);font-size:12px;margin:8px 0 12px;user-select:none}
+.archive-toggle:hover{color:var(--ink)}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow-y:auto}
+.modal.show{display:flex}
+.dialog{background:#fff;border-radius:12px;width:500px;max-width:100%;padding:22px;margin:auto}
+.dialog h2{margin:0 0 16px;font-size:17px}
+label{display:block;font-size:11px;color:#555;margin:10px 0 3px;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:border-color .15s;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:#fdf6f2}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone .icon{font-size:28px;margin-bottom:6px}
+.upload-zone p{margin:0;font-size:12px;color:var(--muted)}
+#previewImg{width:100%;border-radius:8px;margin-top:10px;display:none;max-height:200px;object-fit:cover}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:100;cursor:zoom-out}
+.lightbox.show{display:flex}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain}
+
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr 1fr}
+  .section{padding:0 12px 20px}
+  .summary-bar{padding:10px 12px}
+  header{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="/home.html" style="color:#b8541a;font-size:20px;margin-right:4px" title="Home">⌂</a>
+  <h1>📣 Marketing — In-Restaurant Promos</h1>
+  <button onclick="openAdd()">+ Add Promo</button>
+</header>
+
+<div class="tabs" id="tabs"></div>
+<div class="summary-bar" id="summaryBar"></div>
+<div id="main"></div>
+
+<div class="modal" id="formModal">
+  <div class="dialog" id="formDialog"></div>
+</div>
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('show')">
+  <img id="lightboxImg" src="" alt=""/>
+</div>
+
+<script type="module">
+import{createClient}from"https://esm.sh/@supabase/supabase-js@2";
+const sb=createClient(
+  "https://lvcioeljvwahvsulgilt.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2Y2lvZWxqdndhaHZzdWxnaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDU4MjIsImV4cCI6MjA5MTEyMTgyMn0.RnOOCg3x-ltDU3H-yME5g8Vd6XCHILXqqFjyWDD1AJs"
+);
+
+const RESTAURANTS=["Ubud","Sanur","Jimbaran","Kuta"];
+const TYPES=["Poster","Table Banner","Window Display","Menu Insert","Digital Screen","Other"];
+const STALE_DAYS=30;
+const BUCKET="promos";
+
+let promos=[];
+let activeTab=RESTAURANTS[0];
+let showArchive=false;
+let editingId=null;
+let pendingFile=null;
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=()=>new Date().toISOString().slice(0,10);
+const daysSince=d=>Math.floor((Date.now()-new Date(d))/86400000);
+const esc=s=>(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+async function loadAll(){
+  const{data,error}=await sb.from("promos").select("data").order("updated_at",{ascending:false});
+  if(error){console.error(error);showError("Could not load promos. Make sure the 'promos' table exists in Supabase.");return}
+  promos=(data||[]).map(r=>r.data);
+  render();
+}
+async function upsert(p){await sb.from("promos").upsert({id:p.id,data:p})}
+async function remove(id){
+  const p=promos.find(x=>x.id===id);if(!p)return;
+  p.status="removed";p.removedAt=new Date().toISOString();
+  await upsert(p);render();
+}
+async function restore(id){
+  const p=promos.find(x=>x.id===id);if(!p)return;
+  p.status="active";p.removedAt=null;
+  await upsert(p);render();
+}
+async function confirmStale(id){
+  const p=promos.find(x=>x.id===id);if(!p)return;
+  p.staleConfirmedAt=new Date().toISOString();
+  await upsert(p);render();
+}
+
+async function uploadImage(file){
+  const ext=file.name.split(".").pop()||"jpg";
+  const path=`${uid()}.${ext}`;
+  const{error}=await sb.storage.from(BUCKET).upload(path,file,{cacheControl:"3600",upsert:false});
+  if(error)throw error;
+  const{data}=sb.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function render(){
+  renderTabs();
+  renderSummary();
+  renderMain();
+}
+
+function renderTabs(){
+  const el=document.getElementById("tabs");
+  el.innerHTML=RESTAURANTS.map(r=>`<div class="tab${r===activeTab?" active":""}" data-r="${r}">${r}</div>`).join("");
+  el.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{activeTab=t.dataset.r;showArchive=false;render()});
+}
+
+function renderSummary(){
+  const active=promos.filter(p=>p.restaurant===activeTab&&p.status==="active");
+  const stale=active.filter(p=>isStale(p));
+  const archived=promos.filter(p=>p.restaurant===activeTab&&p.status==="removed");
+  document.getElementById("summaryBar").innerHTML=`
+    <div class="stat"><div class="val">${active.length}</div><div class="lbl">Active</div></div>
+    <div class="stat"><div class="val" style="color:${stale.length?"#b37700":"var(--ok)"}">${stale.length}</div><div class="lbl">Needs Review</div></div>
+    <div class="stat"><div class="val" style="color:var(--muted)">${archived.length}</div><div class="lbl">Archived</div></div>`;
+}
+
+function isStale(p){
+  if(p.status!=="active")return false;
+  if(p.expiresAt&&p.expiresAt<today())return true;
+  if(p.staleConfirmedAt){
+    if(daysSince(p.staleConfirmedAt)<STALE_DAYS)return false;
+  }
+  return daysSince(p.createdAt)>=STALE_DAYS;
+}
+
+function renderMain(){
+  const root=document.getElementById("main");
+  const active=promos.filter(p=>p.restaurant===activeTab&&p.status==="active")
+    .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const archived=promos.filter(p=>p.restaurant===activeTab&&p.status==="removed")
+    .sort((a,b)=>new Date(b.removedAt)-new Date(a.removedAt));
+
+  root.innerHTML="";
+  const sec=document.createElement("div");sec.className="section";
+
+  // Active
+  const activeHdr=document.createElement("div");activeHdr.className="section-hdr";
+  activeHdr.innerHTML=`<h2>Active (${active.length})</h2>`;
+  sec.appendChild(activeHdr);
+
+  const grid=document.createElement("div");grid.className="grid";
+  if(!active.length){
+    grid.innerHTML=`<div class="empty">No active promos for ${activeTab}. Add one with the button above.</div>`;
+  } else {
+    active.forEach(p=>grid.appendChild(promoCard(p,false)));
+  }
+  sec.appendChild(grid);
+
+  // Archive toggle
+  if(archived.length){
+    const tog=document.createElement("div");tog.className="archive-toggle";
+    tog.innerHTML=`${showArchive?"▲":"▼"} ${showArchive?"Hide":"Show"} archived (${archived.length})`;
+    tog.onclick=()=>{showArchive=!showArchive;render()};
+    sec.appendChild(tog);
+    if(showArchive){
+      const ag=document.createElement("div");ag.className="grid";
+      archived.forEach(p=>ag.appendChild(promoCard(p,true)));
+      sec.appendChild(ag);
+    }
+  }
+
+  root.appendChild(sec);
+}
+
+function promoCard(p,archived){
+  const stale=isStale(p);
+  const days=daysSince(p.createdAt);
+  const card=document.createElement("div");
+  card.className="card"+(stale?" stale":"")+(archived?" archived":"");
+
+  const img=document.createElement(p.imageUrl?"img":"div");
+  if(p.imageUrl){
+    img.className="card-img";img.src=p.imageUrl;img.alt=p.title;
+    img.onclick=()=>{document.getElementById("lightboxImg").src=p.imageUrl;document.getElementById("lightbox").classList.add("show")};
+  } else {
+    img.className="card-img-placeholder";img.textContent="🖼";
+  }
+  card.appendChild(img);
+
+  const body=document.createElement("div");body.className="card-body";
+  body.innerHTML=`
+    <div class="card-title">${esc(p.title)}</div>
+    <div class="card-meta">
+      <span class="badge">${esc(p.type)}</span>
+      <span class="days">${archived?`Removed ${fmtRemoved(p.removedAt)}`:`${days}d active`}</span>
+    </div>
+    ${p.addedBy?`<div style="font-size:10px;color:#aaa;margin-bottom:6px">Added by ${esc(p.addedBy)}</div>`:""}
+    ${stale&&!archived?`<div class="stale-prompt">⚠ Still up after ${days} days — confirm or remove</div>`:""}
+  `;
+
+  const actions=document.createElement("div");actions.className="card-actions";
+  if(archived){
+    actions.innerHTML=`<button class="ghost" data-id="${p.id}" data-action="restore">↺ Restore</button>`;
+  } else {
+    if(stale) actions.innerHTML+=`<button class="ghost" data-id="${p.id}" data-action="confirm" style="color:var(--ok)">✓ Still up</button>`;
+    actions.innerHTML+=`<button class="ghost" data-id="${p.id}" data-action="edit">Edit</button>`;
+    actions.innerHTML+=`<button class="danger" data-id="${p.id}" data-action="remove">Remove</button>`;
+  }
+  actions.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    const{action,id}=b.dataset;
+    if(action==="remove")remove(id);
+    else if(action==="restore")restore(id);
+    else if(action==="confirm")confirmStale(id);
+    else if(action==="edit")openEdit(id);
+  });
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+function fmtRemoved(iso){
+  if(!iso)return"";
+  const d=new Date(iso);
+  return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+}
+
+function openAdd(){editingId=null;pendingFile=null;renderForm(null)}
+function openEdit(id){editingId=id;pendingFile=null;renderForm(promos.find(x=>x.id===id))}
+
+function renderForm(p){
+  const v=p||{restaurant:activeTab,title:"",type:"Poster",addedBy:"",expiresAt:"",imageUrl:""};
+  const dlg=document.getElementById("formDialog");
+  dlg.innerHTML=`
+    <h2>${p?"Edit Promo":"Add Promo"}</h2>
+    <label>Photo</label>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="f_file" accept="image/*"/>
+      <div class="icon">📷</div>
+      <p>Tap to upload a photo</p>
+    </div>
+    <img id="previewImg" src="${esc(v.imageUrl)}" style="display:${v.imageUrl?"block":"none"}"/>
+    <label>Promo Title</label>
+    <input id="f_title" value="${esc(v.title)}" placeholder="e.g. Happy Hour Tuesdays"/>
+    <div class="row">
+      <div>
+        <label>Restaurant</label>
+        <select id="f_rest">${RESTAURANTS.map(r=>`<option ${r===v.restaurant?"selected":""}>${r}</option>`).join("")}</select>
+      </div>
+      <div>
+        <label>Type</label>
+        <select id="f_type">${TYPES.map(t=>`<option ${t===v.type?"selected":""}>${t}</option>`).join("")}</select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Added By</label>
+        <input id="f_by" value="${esc(v.addedBy)}" placeholder="Your name"/>
+      </div>
+      <div>
+        <label>Expires On (optional)</label>
+        <input type="date" id="f_expires" value="${v.expiresAt||""}"/>
+      </div>
+    </div>
+    <div class="dlg-actions">
+      ${p?`<button class="danger" style="margin-right:auto" data-id="${p.id}" id="removeBtn">Remove</button>`:""}
+      <button class="ghost" id="cancelBtn">Cancel</button>
+      <button id="saveBtn">Save</button>
+    </div>`;
+
+  const modal=document.getElementById("formModal");
+  modal.classList.add("show");
+
+  // file input
+  const fileInput=dlg.querySelector("#f_file");
+  const preview=dlg.querySelector("#previewImg");
+  const zone=dlg.querySelector("#uploadZone");
+  fileInput.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    pendingFile=f;
+    const reader=new FileReader();
+    reader.onload=ev=>{preview.src=ev.target.result;preview.style.display="block"};
+    reader.readAsDataURL(f);
+  };
+  zone.ondragover=e=>{e.preventDefault();zone.classList.add("drag")};
+  zone.ondragleave=()=>zone.classList.remove("drag");
+  zone.ondrop=e=>{
+    e.preventDefault();zone.classList.remove("drag");
+    const f=e.dataTransfer.files[0];if(!f||!f.type.startsWith("image/"))return;
+    pendingFile=f;
+    const reader=new FileReader();
+    reader.onload=ev=>{preview.src=ev.target.result;preview.style.display="block"};
+    reader.readAsDataURL(f);
+  };
+
+  dlg.querySelector("#cancelBtn").onclick=()=>modal.classList.remove("show");
+  dlg.querySelector("#saveBtn").onclick=()=>saveForm(p);
+  if(p)dlg.querySelector("#removeBtn").onclick=()=>{remove(p.id);modal.classList.remove("show")};
+}
+
+async function saveForm(existing){
+  const g=id=>document.getElementById(id)?.value||"";
+  const saveBtn=document.getElementById("saveBtn");
+  saveBtn.textContent="Saving…";saveBtn.disabled=true;
+  try{
+    let imageUrl=existing?.imageUrl||"";
+    if(pendingFile){
+      try{imageUrl=await uploadImage(pendingFile)}
+      catch(e){
+        alert("Image upload failed. Make sure the 'promos' storage bucket exists in Supabase (Settings → Storage → New bucket → name: promos → Public).\n\n"+e.message);
+        saveBtn.textContent="Save";saveBtn.disabled=false;return;
+      }
+    }
+    const p={
+      id:existing?existing.id:uid(),
+      restaurant:g("f_rest"),
+      title:g("f_title"),
+      type:g("f_type"),
+      addedBy:g("f_by"),
+      expiresAt:g("f_expires")||null,
+      imageUrl,
+      status:existing?.status||"active",
+      createdAt:existing?.createdAt||new Date().toISOString(),
+      removedAt:existing?.removedAt||null,
+      staleConfirmedAt:existing?.staleConfirmedAt||null,
+    };
+    if(existing){const i=promos.indexOf(existing);promos[i]=p}else promos.push(p);
+    await upsert(p);
+    activeTab=p.restaurant;
+    document.getElementById("formModal").classList.remove("show");
+    render();
+  }catch(e){
+    alert("Save failed: "+e.message);
+    saveBtn.textContent="Save";saveBtn.disabled=false;
+  }
+}
+
+function showError(msg){
+  document.getElementById("main").innerHTML=`<div style="padding:40px 20px;text-align:center;color:#c0392b;font-size:14px">⚠ ${msg}</div>`;
+}
+
+document.getElementById("formModal").onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove("show")};
+window.openAdd=openAdd;
+loadAll();
+</script>
+</body>
+</html>
