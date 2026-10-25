@@ -55,6 +55,20 @@ header h1{font-size:16px;margin:0;flex:1}
 .step.due .step-label{color:var(--amber)}
 .step-by{font-size:9px;color:#aaa;text-align:center;margin-top:1px}
 
+/* ASSIGNMENTS */
+.assign-row{display:flex;gap:0;margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+.assign-cell{flex:1;text-align:center;font-size:9px;color:#aaa;line-height:1.5;padding:0 2px}
+.assign-cell .a-name{font-size:10px;color:#555;font-weight:600}
+.assign-cell .a-role{color:#aaa}
+.assign-btn{width:100%;margin-top:8px;padding:5px;font-size:11px;background:#fff;color:var(--accent);border:1px dashed var(--accent);border-radius:6px;cursor:pointer}
+.assign-btn:hover{background:#fdf6f2}
+
+/* ASSIGN MODAL */
+.assign-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
+.assign-grid label{font-size:10px;color:#888;margin:0 0 2px;display:block;text-transform:none;letter-spacing:0}
+.assign-grid select{padding:6px;font-size:12px}
+.assign-step-hdr{font-size:11px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+
 /* MODAL */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow-y:auto}
 .modal.show{display:flex}
@@ -91,6 +105,9 @@ button.undo-btn{background:#fff;color:var(--warn);border:1px solid var(--border)
 <div class="modal" id="stepModal">
   <div class="dialog" id="stepDialog"></div>
 </div>
+<div class="modal" id="assignModal">
+  <div class="dialog" id="assignDialog" style="width:560px"></div>
+</div>
 
 <script type="module">
 import{createClient}from"https://esm.sh/@supabase/supabase-js@2";
@@ -100,6 +117,9 @@ const sb=createClient(
 );
 
 // days-before thresholds
+const PEOPLE=["—","Pawan","Pooja","Arunabh","Akshat","Anahita","Mei","Bertha","Yuli","Vicky","Komang","Elva","Intan","Kartika"];
+const ASSIGNABLE_STEPS=4; // first 4 steps get owner+maker; last (Approved) does not
+
 const STEPS=[
   {key:"designed",  label:"Design",             due:10},
   {key:"sent",      label:"Sent to Printer",     due:5},
@@ -279,6 +299,28 @@ function eventCard(e){
     stepsEl.appendChild(el);
   });
   card.appendChild(stepsEl);
+
+  // assignments row
+  const asgn=tag.assignments||{};
+  const hasAny=STEPS.slice(0,ASSIGNABLE_STEPS).some(s=>asgn[s.key]?.owner||asgn[s.key]?.maker);
+  if(hasAny){
+    const row=document.createElement("div");row.className="assign-row";
+    STEPS.slice(0,ASSIGNABLE_STEPS).forEach(s=>{
+      const cell=document.createElement("div");cell.className="assign-cell";
+      const o=asgn[s.key]?.owner||"—";
+      const m=asgn[s.key]?.maker||"—";
+      cell.innerHTML=`<div class="a-role">Owner</div><div class="a-name">${esc(o)}</div><div class="a-role" style="margin-top:3px">Maker</div><div class="a-name">${esc(m)}</div>`;
+      row.appendChild(cell);
+    });
+    card.appendChild(row);
+  }
+
+  const btn=document.createElement("button");
+  btn.className="assign-btn";
+  btn.textContent=hasAny?"✏ Edit Assignments":"+ Assign Owner & Maker";
+  btn.onclick=()=>openAssign(e,tag);
+  card.appendChild(btn);
+
   return card;
 }
 
@@ -341,7 +383,89 @@ function openStep(event,step,tag,state){
   }
 }
 
+function openAssign(event,tag){
+  const asgn=tag.assignments||{};
+  const opts=PEOPLE.map(p=>`<option value="${p}">${p}</option>`).join("");
+  const dlg=document.getElementById("assignDialog");
+  dlg.innerHTML=`<h2>Assign Owner & Maker</h2>
+    <div class="sub" style="font-size:12px;color:var(--muted);margin-bottom:12px">${esc(event.name)} — ${fmtDate(event.date)}</div>
+    ${STEPS.slice(0,ASSIGNABLE_STEPS).map(s=>`
+      <div class="assign-step-hdr">${s.label} <span style="font-weight:400;color:#aaa">(D-${s.due})</span></div>
+      <div class="assign-grid">
+        <div><label>Owner</label><select id="ao_${s.key}">${opts}</select></div>
+        <div><label>Maker</label><select id="am_${s.key}">${opts}</select></div>
+      </div>
+    `).join("")}
+    <div class="dlg-actions" style="margin-top:16px">
+      <button class="ghost" id="aCancel">Cancel</button>
+      <button id="aSave">Save & Add to Todo List</button>
+    </div>`;
+
+  // set current values
+  STEPS.slice(0,ASSIGNABLE_STEPS).forEach(s=>{
+    const o=asgn[s.key]?.owner||"—";
+    const m=asgn[s.key]?.maker||"—";
+    const os=dlg.querySelector(`#ao_${s.key}`);
+    const ms=dlg.querySelector(`#am_${s.key}`);
+    if(os)os.value=o;
+    if(ms)ms.value=m;
+  });
+
+  document.getElementById("assignModal").classList.add("show");
+  dlg.querySelector("#aCancel").onclick=()=>document.getElementById("assignModal").classList.remove("show");
+  dlg.querySelector("#aSave").onclick=()=>saveAssign(event,tag,dlg);
+}
+
+async function saveAssign(event,tag,dlg){
+  const btn=dlg.querySelector("#aSave");
+  btn.textContent="Saving…";btn.disabled=true;
+
+  const asgn={};
+  STEPS.slice(0,ASSIGNABLE_STEPS).forEach(s=>{
+    asgn[s.key]={
+      owner:dlg.querySelector(`#ao_${s.key}`)?.value||"—",
+      maker:dlg.querySelector(`#am_${s.key}`)?.value||"—",
+    };
+  });
+
+  const updated={...tag,assignments:asgn};
+  await upsertTag(updated);
+
+  // create todos for each assigned person
+  const todosToUpsert=[];
+  STEPS.slice(0,ASSIGNABLE_STEPS).forEach(s=>{
+    const dueDate=new Date(new Date(event.date).getTime()-s.due*86400000).toISOString().slice(0,10);
+    const roles=[["owner","Owner"],["maker","Maker"]];
+    roles.forEach(([roleKey,roleLabel])=>{
+      const name=asgn[s.key][roleKey];
+      if(!name||name==="—")return;
+      const todoId=`ft_${event.id}_${s.key}_${roleKey}`;
+      todosToUpsert.push({
+        id:todoId,
+        data:{
+          id:todoId,
+          assignee:name,
+          text:`[Food Tags] ${s.label} (${roleLabel}) — ${event.name} · ${fmtDate(event.date)}`,
+          done:false,
+          doneAt:"",
+          due:dueDate,
+          recurring:"",
+          bigRock:false,
+        }
+      });
+    });
+  });
+
+  if(todosToUpsert.length){
+    await sb.from("todos").upsert(todosToUpsert);
+  }
+
+  document.getElementById("assignModal").classList.remove("show");
+  render();
+}
+
 document.getElementById("stepModal").onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove("show")};
+document.getElementById("assignModal").onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove("show")};
 loadAll();
 </script>
 </body>
