@@ -224,18 +224,29 @@ function renderMain(){
   root.innerHTML="";
   const sec=document.createElement("div");sec.className="section";
 
-  // Active
-  const activeHdr=document.createElement("div");activeHdr.className="section-hdr";
-  activeHdr.innerHTML=`<h2>Active (${active.length})</h2>`;
-  sec.appendChild(activeHdr);
-
-  const grid=document.createElement("div");grid.className="grid";
+  // Active — grouped by type
   if(!active.length){
-    grid.innerHTML=`<div class="empty">No active promos for ${activeTab}. Add one with the button above.</div>`;
+    const emptyHdr=document.createElement("div");emptyHdr.className="section-hdr";
+    emptyHdr.innerHTML=`<h2>Active (0)</h2>`;
+    sec.appendChild(emptyHdr);
+    const g=document.createElement("div");g.className="grid";
+    g.innerHTML=`<div class="empty">No active promos for ${activeTab}. Add one with the button above.</div>`;
+    sec.appendChild(g);
   } else {
-    active.forEach(p=>grid.appendChild(promoCard(p,false)));
+    // group by type, preserving TYPES order
+    const byType={};
+    active.forEach(p=>{(byType[p.type]=byType[p.type]||[]).push(p)});
+    const orderedTypes=TYPES.filter(t=>byType[t]).concat(Object.keys(byType).filter(t=>!TYPES.includes(t)));
+    orderedTypes.forEach(type=>{
+      const items=byType[type];
+      const hdr=document.createElement("div");hdr.className="section-hdr";
+      hdr.innerHTML=`<h2>${type} <span style="font-weight:400;color:#aaa;font-size:11px">(${items.length})</span></h2>`;
+      sec.appendChild(hdr);
+      const g=document.createElement("div");g.className="grid";
+      items.forEach(p=>g.appendChild(promoCard(p,false)));
+      sec.appendChild(g);
+    });
   }
-  sec.appendChild(grid);
 
   // Archive toggle
   if(archived.length){
