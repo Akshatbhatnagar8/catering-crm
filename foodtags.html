@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>The Chowk - Food Tags</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#222;--muted:#777;--accent:#b8541a;--border:#e3e0d8;--warn:#c0392b;--amber:#b37700;--ok:#2e7d32;--amber-bg:#fff4d6;--red-bg:#fdecea;--green-bg:#e8f5e9}
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink)}
+a{text-decoration:none}
+header{background:#fff;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20}
+header h1{font-size:16px;margin:0;flex:1}
+
+/* SUMMARY */
+.summary-bar{display:flex;gap:10px;padding:14px 20px;overflow-x:auto}
+.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:110px;text-align:center;flex-shrink:0}
+.stat .val{font-size:20px;font-weight:700;color:var(--accent)}
+.stat .lbl{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+
+/* SECTION */
+.section{padding:0 20px 24px}
+.section-hdr{display:flex;align-items:center;gap:10px;margin:16px 0 10px}
+.section-hdr h2{font-size:13px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin:0}
+.section-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* CARDS */
+.event-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.event-card.urgent{border-color:#e57373;box-shadow:0 0 0 1px #e57373}
+.event-card.soon{border-color:#ffd54f;box-shadow:0 0 0 1px #ffd54f}
+.event-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:10px}
+.event-name{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3}
+.event-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.event-badge{flex-shrink:0;text-align:right}
+.days-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700}
+.days-badge.overdue{background:var(--red-bg);color:var(--warn)}
+.days-badge.urgent{background:var(--red-bg);color:var(--warn)}
+.days-badge.soon{background:var(--amber-bg);color:var(--amber)}
+.days-badge.ok{background:var(--green-bg);color:var(--ok)}
+.days-badge.neutral{background:#f0ede8;color:#666}
+.type-tag{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;background:#f0ede8;color:#666;margin-top:4px}
+
+/* STEPS */
+.steps{display:flex;gap:0;position:relative}
+.steps::before{content:"";position:absolute;top:14px;left:14px;right:14px;height:2px;background:var(--border);z-index:0}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;z-index:1;cursor:pointer}
+.step-circle{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.step.done .step-circle{background:var(--ok);border-color:var(--ok);color:#fff}
+.step.overdue .step-circle{background:var(--red-bg);border-color:var(--warn);color:var(--warn)}
+.step.due .step-circle{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.step.pending .step-circle{background:#f0ede8;border-color:#ccc;color:#bbb}
+.step-label{font-size:10px;color:var(--muted);text-align:center;line-height:1.3;max-width:80px}
+.step.done .step-label{color:var(--ok)}
+.step.overdue .step-label{color:var(--warn)}
+.step.due .step-label{color:var(--amber)}
+.step-by{font-size:9px;color:#aaa;text-align:center;margin-top:1px}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow-y:auto}
+.modal.show{display:flex}
+.dialog{background:#fff;border-radius:12px;width:420px;max-width:100%;padding:22px;margin:auto}
+.dialog h2{margin:0 0 6px;font-size:17px}
+.dialog .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+label{display:block;font-size:11px;color:#555;margin:10px 0 3px;text-transform:uppercase;letter-spacing:.4px}
+input,textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;outline:none}
+input:focus,textarea:focus{border-color:var(--accent)}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
+button.undo-btn{background:#fff;color:var(--warn);border:1px solid var(--border);font-size:11px;padding:4px 10px;margin-top:8px}
+
+.empty{color:#aaa;font-size:13px;padding:20px 0;text-align:center}
+
+@media(max-width:600px){
+  .section{padding:0 12px 20px}
+  .summary-bar{padding:10px 12px}
+  header{padding:10px 12px}
+  .steps::before{left:10px;right:10px}
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="/home.html" style="color:#b8541a;font-size:20px;margin-right:4px" title="Home">⌂</a>
+  <h1>🏷 Food Tags</h1>
+</header>
+
+<div class="summary-bar" id="summaryBar"></div>
+<div id="main"></div>
+
+<div class="modal" id="stepModal">
+  <div class="dialog" id="stepDialog"></div>
+</div>
+
+<script type="module">
+import{createClient}from"https://esm.sh/@supabase/supabase-js@2";
+const sb=createClient(
+  "https://lvcioeljvwahvsulgilt.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2Y2lvZWxqdndhaHZzdWxnaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDU4MjIsImV4cCI6MjA5MTEyMTgyMn0.RnOOCg3x-ltDU3H-yME5g8Vd6XCHILXqqFjyWDD1AJs"
+);
+
+// days-before thresholds
+const STEPS=[
+  {key:"designed",  label:"Design",          due:10},
+  {key:"sent",      label:"Sent to Printer",  due:5},
+  {key:"collected", label:"Collected & Checked", due:2},
+];
+
+let events=[];   // merged upcoming events
+let tags={};     // keyed by eventId
+
+const toISO=d=>d instanceof Date?d.toISOString().slice(0,10):d;
+const today=toISO(new Date());
+const daysUntil=dateStr=>Math.ceil((new Date(dateStr)-new Date(today))/86400000);
+const fmtDate=d=>new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+const fmtShort=d=>new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+const esc=s=>(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+async function loadAll(){
+  const[wRes,gRes,tRes]=await Promise.all([
+    sb.from("clients").select("data"),
+    sb.from("groups").select("data"),
+    sb.from("foodtags").select("data"),
+  ]);
+
+  if(tRes.error){
+    if(tRes.error.code==="42P01"){
+      document.getElementById("main").innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--warn);font-size:14px">
+        ⚠ The <b>foodtags</b> table doesn't exist yet.<br><br>
+        Run this in Supabase SQL editor:<br>
+        <code style="display:inline-block;margin-top:8px;background:#f0ede8;padding:8px 12px;border-radius:6px;font-size:12px">
+        create table foodtags (id text primary key, data jsonb, updated_at timestamptz default now());<br>
+        alter table foodtags enable row level security;<br>
+        create policy "allow all" on foodtags for all using (true) with check (true);
+        </code>
+      </div>`;
+      return;
+    }
+    console.error(tRes.error);
+  }
+
+  // build tags map
+  tags={};
+  (tRes.data||[]).forEach(r=>{if(r.data)tags[r.data.eventId]=r.data});
+
+  // collect events: weddings + ODC, confirmed or pending, date >= today-2
+  const cutoff=toISO(new Date(Date.now()-2*86400000));
+  events=[];
+
+  (wRes.data||[]).forEach(r=>{
+    const d=r.data;
+    if(!d||!d.date)return;
+    if(d.date<cutoff)return;
+    if(!["Confirmed","Pending"].includes(d.status))return;
+    events.push({id:"w_"+(d.id||d.name),type:"Wedding",name:d.name||d.company||"Wedding",date:d.date,status:d.status,raw:d});
+  });
+  (gRes.data||[]).forEach(r=>{
+    const d=r.data;
+    if(!d||!d.date)return;
+    if(d.date<cutoff)return;
+    if(!["Confirmed","Pending"].includes(d.status))return;
+    events.push({id:"g_"+(d.id||d.groupCode),type:"ODC / Travel Agent",name:d.company||d.groupCode||"Group",date:d.date,status:d.status,raw:d});
+  });
+
+  events.sort((a,b)=>a.date.localeCompare(b.date));
+  render();
+}
+
+async function upsertTag(t){
+  await sb.from("foodtags").upsert({id:t.eventId,data:t});
+  tags[t.eventId]=t;
+}
+
+function getTag(eventId){
+  return tags[eventId]||{eventId,designed:null,designedBy:null,sent:null,sentBy:null,collected:null,collectedBy:null};
+}
+
+function stepState(step,tag,days){
+  if(tag[step.key]) return "done";
+  if(days<0) return "overdue";
+  if(days<=step.due) return "due";
+  return "pending";
+}
+
+function render(){
+  renderSummary();
+  renderMain();
+}
+
+function renderSummary(){
+  const urgent=events.filter(e=>{
+    const days=daysUntil(e.date);
+    const tag=getTag(e.id);
+    return STEPS.some(s=>!tag[s.key]&&days<=s.due&&days>=-2);
+  }).length;
+  const total=events.length;
+  const done=events.filter(e=>{const t=getTag(e.id);return STEPS.every(s=>t[s.key])}).length;
+  document.getElementById("summaryBar").innerHTML=`
+    <div class="stat"><div class="val">${total}</div><div class="lbl">Upcoming</div></div>
+    <div class="stat"><div class="val" style="color:${urgent?"var(--warn)":"var(--ok)"}">${urgent}</div><div class="lbl">Action Needed</div></div>
+    <div class="stat"><div class="val" style="color:var(--ok)">${done}</div><div class="lbl">All Done</div></div>`;
+}
+
+function renderMain(){
+  const root=document.getElementById("main");
+  root.innerHTML="";
+
+  const overdue=events.filter(e=>daysUntil(e.date)<0);
+  const urgent=events.filter(e=>{const d=daysUntil(e.date);return d>=0&&d<=2});
+  const soon=events.filter(e=>{const d=daysUntil(e.date);return d>2&&d<=10});
+  const upcoming=events.filter(e=>daysUntil(e.date)>10);
+
+  const sections=[
+    {label:"Overdue / Past",color:"#e57373",items:overdue},
+    {label:"Urgent — within 2 days",color:"var(--warn)",items:urgent},
+    {label:"Due Soon — within 10 days",color:"var(--amber)",items:soon},
+    {label:"Upcoming",color:"#aaa",items:upcoming},
+  ];
+
+  let anyShown=false;
+  sections.forEach(sec=>{
+    if(!sec.items.length)return;
+    anyShown=true;
+    const s=document.createElement("div");s.className="section";
+    s.innerHTML=`<div class="section-hdr"><div class="section-dot" style="background:${sec.color}"></div><h2>${sec.label}</h2></div>`;
+    sec.items.forEach(e=>s.appendChild(eventCard(e)));
+    root.appendChild(s);
+  });
+  if(!anyShown){
+    root.innerHTML=`<div class="empty" style="padding:60px 20px">No upcoming confirmed or pending events found.</div>`;
+  }
+}
+
+function eventCard(e){
+  const days=daysUntil(e.date);
+  const tag=getTag(e.id);
+  const card=document.createElement("div");
+  card.className="event-card"+(days<=2&&days>=0?" urgent":days<=10&&days>=0?" soon":"");
+
+  let daysTxt,daysClass;
+  if(days<0){daysTxt=`${Math.abs(days)}d ago`;daysClass="overdue"}
+  else if(days===0){daysTxt="Today";daysClass="urgent"}
+  else if(days===1){daysTxt="Tomorrow";daysClass="urgent"}
+  else if(days<=10){daysTxt=`${days}d left`;daysClass="soon"}
+  else{daysTxt=`${days} days`;daysClass="neutral"}
+
+  card.innerHTML=`
+    <div class="event-top">
+      <div>
+        <div class="event-name">${esc(e.name)}</div>
+        <div class="event-sub">${fmtDate(e.date)}</div>
+        <span class="type-tag">${esc(e.type)}</span>
+      </div>
+      <div class="event-badge">
+        <div class="days-badge ${daysClass}">${daysTxt}</div>
+      </div>
+    </div>`;
+
+  // steps
+  const stepsEl=document.createElement("div");stepsEl.className="steps";
+  STEPS.forEach(step=>{
+    const state=stepState(step,tag,days);
+    const el=document.createElement("div");el.className=`step ${state}`;
+    const icon=state==="done"?"✓":state==="overdue"?"!":state==="due"?"→":"";
+    el.innerHTML=`
+      <div class="step-circle">${icon}</div>
+      <div class="step-label">${step.label}<br><span style="font-size:9px;opacity:.7">D-${step.due}</span></div>
+      ${tag[step.key]?`<div class="step-by">${fmtShort(tag[step.key])}${tag[step.key+"By"]?" · "+esc(tag[step.key+"By"]):""}</div>`:""}`;
+    el.onclick=()=>openStep(e,step,tag,state);
+    stepsEl.appendChild(el);
+  });
+  card.appendChild(stepsEl);
+  return card;
+}
+
+function openStep(event,step,tag,state){
+  const dlg=document.getElementById("stepDialog");
+  const isDone=state==="done";
+  dlg.innerHTML=`
+    <h2>${isDone?"✓ "+step.label:step.label}</h2>
+    <div class="sub">${esc(event.name)} — ${fmtDate(event.date)}</div>
+    ${isDone?`
+      <div style="background:var(--green-bg);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--ok);margin-bottom:4px">
+        Done on ${fmtDate(tag[step.key])}${tag[step.key+"By"]?" by "+esc(tag[step.key+"By"]):""}
+      </div>
+      <button class="undo-btn" id="undoBtn">Undo</button>
+    `:`
+      <label>Completed by</label>
+      <input id="s_by" placeholder="Your name (optional)"/>
+      <div class="dlg-actions">
+        <button class="ghost" id="cancelBtn">Cancel</button>
+        <button id="saveBtn">Mark as Done</button>
+      </div>
+    `}
+    ${isDone?`<div class="dlg-actions" style="margin-top:12px"><button class="ghost" id="cancelBtn">Close</button></div>`:""}`;
+
+  document.getElementById("stepModal").classList.add("show");
+  dlg.querySelector("#cancelBtn").onclick=()=>document.getElementById("stepModal").classList.remove("show");
+  if(isDone){
+    dlg.querySelector("#undoBtn").onclick=async()=>{
+      const updated={...tag};
+      updated[step.key]=null;updated[step.key+"By"]=null;
+      await upsertTag(updated);
+      document.getElementById("stepModal").classList.remove("show");
+      render();
+    };
+  } else {
+    dlg.querySelector("#saveBtn").onclick=async()=>{
+      const by=dlg.querySelector("#s_by").value||"";
+      const updated={...tag};
+      updated[step.key]=new Date().toISOString();
+      updated[step.key+"By"]=by;
+      await upsertTag(updated);
+      document.getElementById("stepModal").classList.remove("show");
+      render();
+    };
+  }
+}
+
+document.getElementById("stepModal").onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove("show")};
+loadAll();
+</script>
+</body>
+</html>
