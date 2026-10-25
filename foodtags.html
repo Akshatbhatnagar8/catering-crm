@@ -101,9 +101,10 @@ const sb=createClient(
 
 // days-before thresholds
 const STEPS=[
-  {key:"designed",  label:"Design",          due:10},
-  {key:"sent",      label:"Sent to Printer",  due:5},
-  {key:"collected", label:"Collected & Checked", due:2},
+  {key:"designed",  label:"Design",             due:10},
+  {key:"sent",      label:"Sent to Printer",     due:5},
+  {key:"collected", label:"Collected",           due:2},
+  {key:"checked",   label:"Checked by Sales",    due:2, assignees:["Arunabh","Pooja"]},
 ];
 
 let events=[];   // merged upcoming events
@@ -290,6 +291,13 @@ function openStep(event,step,tag,state){
         Done on ${fmtDate(tag[step.key])}${tag[step.key+"By"]?" by "+esc(tag[step.key+"By"]):""}
       </div>
       <button class="undo-btn" id="undoBtn">Undo</button>
+      <div class="dlg-actions" style="margin-top:12px"><button class="ghost" id="cancelBtn">Close</button></div>
+    `:step.assignees?`
+      <label>Checked by</label>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        ${step.assignees.map(a=>`<button class="ghost assignee-btn" data-name="${a}" style="flex:1;font-size:14px;padding:12px 0">${a}</button>`).join("")}
+      </div>
+      <div class="dlg-actions" style="margin-top:8px"><button class="ghost" id="cancelBtn">Cancel</button></div>
     `:`
       <label>Completed by</label>
       <input id="s_by" placeholder="Your name (optional)"/>
@@ -297,11 +305,10 @@ function openStep(event,step,tag,state){
         <button class="ghost" id="cancelBtn">Cancel</button>
         <button id="saveBtn">Mark as Done</button>
       </div>
-    `}
-    ${isDone?`<div class="dlg-actions" style="margin-top:12px"><button class="ghost" id="cancelBtn">Close</button></div>`:""}`;
+    `}`;
 
   document.getElementById("stepModal").classList.add("show");
-  dlg.querySelector("#cancelBtn").onclick=()=>document.getElementById("stepModal").classList.remove("show");
+  dlg.querySelectorAll("#cancelBtn").forEach(b=>b.onclick=()=>document.getElementById("stepModal").classList.remove("show"));
   if(isDone){
     dlg.querySelector("#undoBtn").onclick=async()=>{
       const updated={...tag};
@@ -310,6 +317,15 @@ function openStep(event,step,tag,state){
       document.getElementById("stepModal").classList.remove("show");
       render();
     };
+  } else if(step.assignees){
+    dlg.querySelectorAll(".assignee-btn").forEach(b=>b.onclick=async()=>{
+      const updated={...tag};
+      updated[step.key]=new Date().toISOString();
+      updated[step.key+"By"]=b.dataset.name;
+      await upsertTag(updated);
+      document.getElementById("stepModal").classList.remove("show");
+      render();
+    });
   } else {
     dlg.querySelector("#saveBtn").onclick=async()=>{
       const by=dlg.querySelector("#s_by").value||"";
