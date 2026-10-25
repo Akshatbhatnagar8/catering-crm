@@ -124,7 +124,7 @@ const STEPS=[
   {key:"designed",  label:"Design",             due:10},
   {key:"sent",      label:"Sent to Printer",     due:5},
   {key:"collected", label:"Collected",           due:2},
-  {key:"checked",   label:"Checked by Staff",    due:2},
+  {key:"checked",   label:"Checked by Staff",    due:2, ownerOnly:true},
   {key:"approved",  label:"Approved",            due:2, assignees:["Arunabh","Pooja"]},
 ];
 
@@ -309,7 +309,7 @@ function eventCard(e){
       const cell=document.createElement("div");cell.className="assign-cell";
       const o=asgn[s.key]?.owner||"—";
       const m=asgn[s.key]?.maker||"—";
-      cell.innerHTML=`<div class="a-role">Owner</div><div class="a-name">${esc(o)}</div><div class="a-role" style="margin-top:3px">Maker</div><div class="a-name">${esc(m)}</div>`;
+      cell.innerHTML=`<div class="a-role">Owner</div><div class="a-name">${esc(o)}</div>${s.ownerOnly?"":`<div class="a-role" style="margin-top:3px">Maker</div><div class="a-name">${esc(m)}</div>`}`;
       row.appendChild(cell);
     });
     card.appendChild(row);
@@ -393,7 +393,7 @@ function openAssign(event,tag){
       <div class="assign-step-hdr">${s.label} <span style="font-weight:400;color:#aaa">(D-${s.due})</span></div>
       <div class="assign-grid">
         <div><label>Owner</label><select id="ao_${s.key}">${opts}</select></div>
-        <div><label>Maker</label><select id="am_${s.key}">${opts}</select></div>
+        ${s.ownerOnly?`<div style="display:flex;align-items:center;font-size:11px;color:#bbb;padding-top:16px">No maker needed</div>`:`<div><label>Maker</label><select id="am_${s.key}">${opts}</select></div>`}
       </div>
     `).join("")}
     <div class="dlg-actions" style="margin-top:16px">
@@ -435,7 +435,7 @@ async function saveAssign(event,tag,dlg){
   const todosToUpsert=[];
   STEPS.slice(0,ASSIGNABLE_STEPS).forEach(s=>{
     const dueDate=new Date(new Date(event.date).getTime()-s.due*86400000).toISOString().slice(0,10);
-    const roles=[["owner","Owner"],["maker","Maker"]];
+    const roles=s.ownerOnly?[["owner","Owner"]]:[["owner","Owner"],["maker","Maker"]];
     roles.forEach(([roleKey,roleLabel])=>{
       const name=asgn[s.key][roleKey];
       if(!name||name==="—")return;
