@@ -14,6 +14,10 @@ header h1{font-size:16px;margin:0;flex:1}
 button{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit}
 button.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
 button.danger{background:#fff;color:var(--warn);border:1px solid var(--border)}
+button.reorder{background:#fff4d6;color:#b37700;border:1px solid #e6c84a}
+.reorder-banner{background:#fff4d6;border-radius:6px;padding:7px 10px;font-size:11px;color:#b37700;margin-bottom:8px;line-height:1.4}
+.reprinted-banner{background:#e8f5e9;border-radius:6px;padding:7px 10px;font-size:11px;color:var(--ok);margin-bottom:8px;line-height:1.4}
+.reorder-notes{font-size:11px;color:#888;background:#fafafa;border-radius:6px;padding:5px 8px;margin-bottom:8px;line-height:1.5;border:1px solid var(--border)}
 
 /* TABS */
 .tabs{display:flex;gap:0;border-bottom:2px solid var(--border);padding:0 20px;background:#fff;overflow-x:auto}
@@ -151,6 +155,22 @@ async function confirmStale(id){
   p.staleConfirmedAt=new Date().toISOString();
   await upsert(p);render();
 }
+async function requestReorder(id){
+  const p=promos.find(x=>x.id===id);if(!p)return;
+  const by=prompt("Your name (optional):")||"";
+  p.reorderRequestedAt=new Date().toISOString();
+  p.reorderRequestedBy=by;
+  p.reprintedAt=null;p.reprintedBy=null;
+  await upsert(p);render();
+}
+async function confirmReorder(id){
+  const p=promos.find(x=>x.id===id);if(!p)return;
+  const by=prompt("Confirmed by (optional):")||"";
+  p.reprintedAt=new Date().toISOString();
+  p.reprintedBy=by;
+  p.reorderRequestedAt=null;p.reorderRequestedBy=null;
+  await upsert(p);render();
+}
 
 async function uploadImage(file){
   const ext=file.name.split(".").pop()||"jpg";
@@ -177,9 +197,11 @@ function renderSummary(){
   const active=promos.filter(p=>p.restaurant===activeTab&&p.status==="active");
   const stale=active.filter(p=>isStale(p));
   const archived=promos.filter(p=>p.restaurant===activeTab&&p.status==="removed");
+  const reorders=active.filter(p=>p.reorderRequestedAt&&!p.reprintedAt);
   document.getElementById("summaryBar").innerHTML=`
     <div class="stat"><div class="val">${active.length}</div><div class="lbl">Active</div></div>
     <div class="stat"><div class="val" style="color:${stale.length?"#b37700":"var(--ok)"}">${stale.length}</div><div class="lbl">Needs Review</div></div>
+    <div class="stat"><div class="val" style="color:${reorders.length?"#b37700":"var(--muted)"}">${reorders.length}</div><div class="lbl">Reorder Pending</div></div>
     <div class="stat"><div class="val" style="color:var(--muted)">${archived.length}</div><div class="lbl">Archived</div></div>`;
 }
 
@@ -255,6 +277,9 @@ function promoCard(p,archived){
     </div>
     ${p.addedBy?`<div style="font-size:10px;color:#aaa;margin-bottom:6px">Added by ${esc(p.addedBy)}</div>`:""}
     ${stale&&!archived?`<div class="stale-prompt">⚠ Still up after ${days} days — confirm or remove</div>`:""}
+    ${p.reorderNotes&&!archived?`<div class="reorder-notes">📦 ${esc(p.reorderNotes)}</div>`:""}
+    ${p.reorderRequestedAt&&!p.reprintedAt&&!archived?`<div class="reorder-banner">🔁 Reorder requested${p.reorderRequestedBy?" by "+esc(p.reorderRequestedBy):""} — confirm when reprinted</div>`:""}
+    ${p.reprintedAt&&!archived?`<div class="reprinted-banner">✓ Reprinted ${fmtRemoved(p.reprintedAt)}${p.reprintedBy?" by "+esc(p.reprintedBy):""}</div>`:""}
   `;
 
   const actions=document.createElement("div");actions.className="card-actions";
@@ -262,6 +287,11 @@ function promoCard(p,archived){
     actions.innerHTML=`<button class="ghost" data-id="${p.id}" data-action="restore">↺ Restore</button>`;
   } else {
     if(stale) actions.innerHTML+=`<button class="ghost" data-id="${p.id}" data-action="confirm" style="color:var(--ok)">✓ Still up</button>`;
+    if(p.reorderRequestedAt&&!p.reprintedAt){
+      actions.innerHTML+=`<button class="ghost" data-id="${p.id}" data-action="confirmReorder" style="color:var(--ok)">✓ Reprinted</button>`;
+    } else {
+      actions.innerHTML+=`<button class="reorder" data-id="${p.id}" data-action="requestReorder">Reorder</button>`;
+    }
     actions.innerHTML+=`<button class="ghost" data-id="${p.id}" data-action="edit">Edit</button>`;
     actions.innerHTML+=`<button class="danger" data-id="${p.id}" data-action="remove">Remove</button>`;
   }
@@ -271,6 +301,8 @@ function promoCard(p,archived){
     else if(action==="restore")restore(id);
     else if(action==="confirm")confirmStale(id);
     else if(action==="edit")openEdit(id);
+    else if(action==="requestReorder")requestReorder(id);
+    else if(action==="confirmReorder")confirmReorder(id);
   });
   body.appendChild(actions);
   card.appendChild(body);
@@ -287,7 +319,7 @@ function openAdd(){editingId=null;pendingFile=null;renderForm(null)}
 function openEdit(id){editingId=id;pendingFile=null;renderForm(promos.find(x=>x.id===id))}
 
 function renderForm(p){
-  const v=p||{restaurant:activeTab,title:"",type:"Poster",addedBy:"",expiresAt:"",imageUrl:""};
+  const v=p||{restaurant:activeTab,title:"",type:"Poster",addedBy:"",expiresAt:"",imageUrl:"",reorderNotes:""};
   const dlg=document.getElementById("formDialog");
   dlg.innerHTML=`
     <h2>${p?"Edit Promo":"Add Promo"}</h2>
@@ -320,6 +352,8 @@ function renderForm(p){
         <input type="date" id="f_expires" value="${v.expiresAt||""}"/>
       </div>
     </div>
+    <label>Reorder Notes (vendor, qty, specs)</label>
+    <textarea id="f_reorder" rows="2" placeholder="e.g. Bali Print Co — 10x A3 posters — call 0812-xxx">${esc(v.reorderNotes||"")}</textarea>
     <div class="dlg-actions">
       ${p?`<button class="danger" style="margin-right:auto" data-id="${p.id}" id="removeBtn">Remove</button>`:""}
       <button class="ghost" id="cancelBtn">Cancel</button>
@@ -381,6 +415,11 @@ async function saveForm(existing){
       createdAt:existing?.createdAt||new Date().toISOString(),
       removedAt:existing?.removedAt||null,
       staleConfirmedAt:existing?.staleConfirmedAt||null,
+      reorderNotes:g("f_reorder")||null,
+      reorderRequestedAt:existing?.reorderRequestedAt||null,
+      reorderRequestedBy:existing?.reorderRequestedBy||null,
+      reprintedAt:existing?.reprintedAt||null,
+      reprintedBy:existing?.reprintedBy||null,
     };
     if(existing){const i=promos.indexOf(existing);promos[i]=p}else promos.push(p);
     await upsert(p);
