@@ -322,7 +322,7 @@ function openAdd(prefillDate=""){editingId=null;renderForm(null,prefillDate)}
 function openEdit(id){editingId=id;const b=bookings.find(x=>x.id===id);renderForm(b)}
 function renderForm(b,prefillDate=""){
   const dlg=document.getElementById("formDialog");
-  const v=b||{id:"",company:"",groupCode:"",date:prefillDate,time:"Lunch",venue:"The Chowk Ubud",description:"",adult:"",child:"",foc:"",status:"",notes:"",rate:""};
+  const v=b||{id:"",company:"",groupCode:"",date:prefillDate,time:"Lunch",venue:"The Chowk Ubud",description:"",adult:"",child:"",foc:"",status:"",notes:"",rate:"",foodTagsRequired:false};
   dlg.innerHTML=`<h2>${b?"Edit Booking":"New Booking"}</h2>
     <div class="row">
       <div><label>Company / Travel Agent</label><input id="f_company" value="${esc(v.company)}"/></div>
@@ -348,6 +348,10 @@ function renderForm(b,prefillDate=""){
     </div>
     <label>Booking Status</label><select id="f_status">${STATUSES.map(s=>`<option ${s===v.status?"selected":""}>${s}</option>`).join("")}</select>
     <label>Notes</label><textarea id="f_notes" rows="2">${esc(v.notes)}</textarea>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;background:#f6f5f1;border-radius:8px;border:1px solid var(--border)">
+      <input type="checkbox" id="f_foodTags" style="width:auto;accent-color:var(--accent);width:16px;height:16px;cursor:pointer" ${v.foodTagsRequired?"checked":""}/>
+      <label for="f_foodTags" style="margin:0;font-size:13px;color:var(--ink);text-transform:none;letter-spacing:0;cursor:pointer">Food tags required for this event</label>
+    </div>
     <div class="dlg-actions">
       ${b?`<button style="background:#c0392b;margin-right:auto" onclick="if(confirm('Delete?')){delBook('${b.id}');document.getElementById('formModal').classList.remove('show')}">Delete</button>`:""}
       <button class="ghost" onclick="document.getElementById('formModal').classList.remove('show')">Cancel</button>
@@ -367,7 +371,8 @@ async function saveForm(){
     venue:venueVal,
     customVenue:venueVal==="Other"?(g("f_venueCustom")||""):"",
     description:g("f_desc"),adult:g("f_adult"),child:g("f_child"),foc:g("f_foc"),
-    rate:g("f_rate"),status:g("f_status"),notes:g("f_notes")
+    rate:g("f_rate"),status:g("f_status"),notes:g("f_notes"),
+    foodTagsRequired:document.getElementById("f_foodTags")?.checked||false
   };
   if(existing){const i=bookings.indexOf(existing);bookings[i]=b}else bookings.push(b);
   await upsert(b);

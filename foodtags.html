@@ -159,6 +159,7 @@ async function loadAll(){
     if(!d||!d.date)return;
     if(d.date<cutoff)return;
     if(!["Confirmed","Pending"].includes(d.status))return;
+    if(!d.foodTagsRequired)return;
     events.push({id:"g_"+(d.id||d.groupCode),type:"ODC / Travel Agent",name:d.company||d.groupCode||"Group",date:d.date,status:d.status,raw:d});
   });
 
