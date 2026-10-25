@@ -368,6 +368,13 @@ function openStep(event,step,tag,state){
       updated[step.key]=new Date().toISOString();
       updated[step.key+"By"]=b.dataset.name;
       await upsertTag(updated);
+      if(step.key==="approved"){
+        const todoText=`[Food Tags] ✓ Approved — ${event.name} · ${fmtDate(event.date)}`;
+        await sb.from("todos").upsert(["Arunabh","Pooja"].map(name=>({
+          id:`ft_approved_${event.id}_${name}`,
+          data:{id:`ft_approved_${event.id}_${name}`,assignee:name,text:todoText,done:false,doneAt:"",due:event.date,recurring:"",bigRock:false}
+        })));
+      }
       document.getElementById("stepModal").classList.remove("show");
       render();
     });
