@@ -155,9 +155,10 @@ async function loadAll(){
     // each client may have multiple events; add one entry per event date
     const evDates=(d.events||[]).map(e=>e.date).filter(Boolean);
     if(!evDates.length)return;
-    evDates.forEach(date=>{
-      if(date<cutoff)return;
-      events.push({id:"w_"+d.id+"_"+date,type:"Wedding",name:d.name||"Wedding",date,status:d.stage,raw:d});
+    (d.events||[]).forEach(ev=>{
+      if(!ev.date||ev.date<cutoff)return;
+      const evType=ev.type==="Other"&&ev.customType?ev.customType:ev.type||"Wedding";
+      events.push({id:"w_"+d.id+"_"+ev.date,type:evType,name:d.name||"Wedding",date:ev.date,status:d.stage,raw:d});
     });
   });
   (gRes.data||[]).forEach(r=>{
