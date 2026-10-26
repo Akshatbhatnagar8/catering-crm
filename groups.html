@@ -28,8 +28,8 @@ button.icon{background:transparent;border:1px solid var(--border);color:var(--in
 .stat .lbl{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
 
 /* ANALYSIS */
-.analysis{padding:0 20px 4px;display:flex;gap:12px;flex-wrap:wrap}
-.analysis-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;flex:1;min-width:240px}
+.analysis{padding:0 20px 4px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.analysis-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 20px}
 .analysis-card h3{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin:0 0 12px}
 .analysis-toggle{display:flex;align-items:center;gap:6px;padding:4px 20px 10px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;width:fit-content}
 .analysis-toggle:hover{color:var(--ink)}
@@ -280,10 +280,13 @@ function renderAnalysis(){
   const lmAvg=avgRate(lmb);
   const momDiff=avg&&lmAvg?Math.round((avg-lmAvg)/lmAvg*100):null;
   const bands=[
-    {label:"< 200k",fn:r=>r<200000},
-    {label:"200–350k",fn:r=>r>=200000&&r<350000},
-    {label:"350–500k",fn:r=>r>=350000&&r<500000},
-    {label:"500k +",fn:r=>r>=500000},
+    {label:"< 100k",    fn:r=>r<100000},
+    {label:"100–150k",  fn:r=>r>=100000&&r<150000},
+    {label:"150–200k",  fn:r=>r>=150000&&r<200000},
+    {label:"200–250k",  fn:r=>r>=200000&&r<250000},
+    {label:"250–350k",  fn:r=>r>=250000&&r<350000},
+    {label:"350–500k",  fn:r=>r>=350000&&r<500000},
+    {label:"500k +",    fn:r=>r>=500000},
   ];
   const maxBand=Math.max(...bands.map(b=>rates.filter(b.fn).length),1);
 
