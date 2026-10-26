@@ -241,26 +241,44 @@ function renderSummary(){
     <div class="stat"><div class="val">IDR ${total.toFixed(1)}mn</div><div class="lbl">Total Pipeline</div></div>`;
 }
 let showAnalysis=true;
+function lastMonthBookings(){
+  const d=new Date(cur);d.setMonth(d.getMonth()-1);
+  const y=d.getFullYear(),m=pad(d.getMonth()+1);
+  return bookings.filter(b=>b.date&&b.date.startsWith(`${y}-${m}`));
+}
+function formatRate(r){return r>=1000000?(r/1000000).toFixed(1)+"M":(r/1000).toFixed(0)+"k"}
+function avgRate(bks){
+  const rated=bks.filter(b=>parseFloat(b.rate)>0);
+  if(!rated.length)return 0;
+  return Math.round(rated.reduce((a,b)=>a+parseFloat(b.rate),0)/rated.length);
+}
+function mkBar(val,max,color="var(--accent)"){
+  const pct=max?Math.round(val/max*100):0;
+  return `<div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>`;
+}
+
 function renderAnalysis(){
   const mb=monthBookings().filter(b=>b.status!=="Cancelled");
+  const lmb=lastMonthBookings().filter(b=>b.status!=="Cancelled");
   const el=document.getElementById("analysisSection");
 
   const tog=document.createElement("div");tog.className="analysis-toggle";
-  tog.innerHTML=`${showAnalysis?"▲ Hide":"▼ Show"} Pricing & Menu Analysis`;
+  tog.innerHTML=`${showAnalysis?"▲ Hide":"▼ Show"} Analysis`;
   tog.onclick=()=>{showAnalysis=!showAnalysis;renderAnalysis()};
-
   el.innerHTML="";
   el.appendChild(tog);
   if(!showAnalysis)return;
 
   const wrap=document.createElement("div");wrap.className="analysis";
 
-  // ── PRICING PER PAX ──
+  // ── 1. PRICING PER PAX ──
   const rated=mb.filter(b=>parseFloat(b.rate)>0);
   const rates=rated.map(b=>parseFloat(b.rate));
-  const avg=rates.length?Math.round(rates.reduce((a,r)=>a+r,0)/rates.length):0;
+  const avg=avgRate(mb);
   const minR=rates.length?Math.min(...rates):0;
   const maxR=rates.length?Math.max(...rates):0;
+  const lmAvg=avgRate(lmb);
+  const momDiff=avg&&lmAvg?Math.round((avg-lmAvg)/lmAvg*100):null;
   const bands=[
     {label:"< 200k",fn:r=>r<200000},
     {label:"200–350k",fn:r=>r>=200000&&r<350000},
@@ -270,25 +288,24 @@ function renderAnalysis(){
   const maxBand=Math.max(...bands.map(b=>rates.filter(b.fn).length),1);
 
   const priceCard=document.createElement("div");priceCard.className="analysis-card";
-  priceCard.innerHTML=`<h3>Pricing per Pax (IDR)</h3>
+  priceCard.innerHTML=`<h3>Pricing per Pax</h3>
     <div class="rate-grid">
-      <div class="rate-cell"><div class="rv">${avg?formatRate(avg):"—"}</div><div class="rl">Avg</div></div>
+      <div class="rate-cell"><div class="rv">${avg?formatRate(avg):"—"}</div><div class="rl">Avg Rate</div></div>
       <div class="rate-cell"><div class="rv">${minR?formatRate(minR):"—"}</div><div class="rl">Min</div></div>
       <div class="rate-cell"><div class="rv">${maxR?formatRate(maxR):"—"}</div><div class="rl">Max</div></div>
     </div>
+    ${momDiff!==null?`<div style="font-size:11px;margin-bottom:10px;color:${momDiff>=0?"var(--ok)":"var(--warn)"}">
+      ${momDiff>=0?"▲":"▼"} ${Math.abs(momDiff)}% vs last month (${formatRate(lmAvg)})
+    </div>`:""}
     ${bands.map(b=>{
       const cnt=rates.filter(b.fn).length;
-      return `<div class="band-row">
-        <div class="band-label">${b.label}</div>
-        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(cnt/maxBand*100)}%"></div></div>
-        <div class="band-count">${cnt}</div>
-      </div>`;
+      return `<div class="band-row"><div class="band-label">${b.label}</div>${mkBar(cnt,maxBand,"#b8541a80")}<div class="band-count">${cnt}</div></div>`;
     }).join("")}
-    <div style="font-size:10px;color:#bbb;margin-top:8px">${rated.length} of ${mb.length} bookings have a rate set</div>`;
+    <div style="font-size:10px;color:#bbb;margin-top:8px">${rated.length} of ${mb.length} bookings have a rate</div>`;
   wrap.appendChild(priceCard);
 
-  // ── MENU BREAKDOWN ──
-  const menuCount={};const menuRev={};
+  // ── 2. MENU SELECTION ──
+  const menuCount={},menuRev={};
   mb.forEach(b=>{
     const m=b.description||"(none)";
     menuCount[m]=(menuCount[m]||0)+1;
@@ -296,22 +313,106 @@ function renderAnalysis(){
   });
   const menuEntries=Object.entries(menuCount).sort((a,b)=>b[1]-a[1]);
   const maxMenu=menuEntries[0]?.[1]||1;
-
   const menuCard=document.createElement("div");menuCard.className="analysis-card";
   menuCard.innerHTML=`<h3>Menu Selection</h3>
     ${menuEntries.map(([m,cnt])=>`
       <div class="menu-row">
         <div class="menu-label" title="${esc(m)}">${esc(m)}</div>
-        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(cnt/maxMenu*100)}%"></div></div>
+        ${mkBar(cnt,maxMenu)}
         <div class="menu-count">${cnt}</div>
         <div class="menu-rev">${menuRev[m]>0?`IDR ${menuRev[m].toFixed(1)}mn`:""}</div>
       </div>`).join("")}
     ${!menuEntries.length?`<div style="font-size:12px;color:#bbb">No bookings this month</div>`:""}`;
   wrap.appendChild(menuCard);
 
+  // ── 3. REVENUE BY AGENT ──
+  const agentRev={},agentCnt={};
+  mb.forEach(b=>{
+    const a=b.company||"(no agent)";
+    agentRev[a]=(agentRev[a]||0)+bookingRevenue(b);
+    agentCnt[a]=(agentCnt[a]||0)+1;
+  });
+  const agentEntries=Object.entries(agentRev).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const maxAgentRev=agentEntries[0]?.[1]||1;
+  const agentRevCard=document.createElement("div");agentRevCard.className="analysis-card";
+  agentRevCard.innerHTML=`<h3>Revenue by Agent</h3>
+    ${agentEntries.map(([a,rev])=>`
+      <div class="menu-row">
+        <div class="menu-label" title="${esc(a)}">${esc(a)}</div>
+        ${mkBar(rev,maxAgentRev,"#2e7d3280")}
+        <div class="menu-rev" style="width:80px">IDR ${rev.toFixed(1)}mn</div>
+      </div>`).join("")}
+    ${!agentEntries.length?`<div style="font-size:12px;color:#bbb">No data</div>`:""}`;
+  wrap.appendChild(agentRevCard);
+
+  // ── 4. RATE BY AGENT ──
+  const agentRates={};
+  mb.filter(b=>parseFloat(b.rate)>0).forEach(b=>{
+    const a=b.company||"(no agent)";
+    agentRates[a]=agentRates[a]||[];
+    agentRates[a].push(parseFloat(b.rate));
+  });
+  const agentRateEntries=Object.entries(agentRates)
+    .map(([a,rs])=>([a,Math.round(rs.reduce((x,r)=>x+r,0)/rs.length)]))
+    .sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const maxAgentRate=agentRateEntries[0]?.[1]||1;
+  const agentRateCard=document.createElement("div");agentRateCard.className="analysis-card";
+  agentRateCard.innerHTML=`<h3>Avg Rate by Agent (IDR)</h3>
+    ${agentRateEntries.map(([a,r])=>`
+      <div class="menu-row">
+        <div class="menu-label" title="${esc(a)}">${esc(a)}</div>
+        ${mkBar(r,maxAgentRate,"#1565c080")}
+        <div class="menu-rev" style="width:50px">${formatRate(r)}</div>
+      </div>`).join("")}
+    ${!agentRateEntries.length?`<div style="font-size:12px;color:#bbb">No rate data</div>`:""}`;
+  wrap.appendChild(agentRateCard);
+
+  // ── 5. PAX SIZE DISTRIBUTION ──
+  const paxBands=[
+    {label:"≤ 20 pax",fn:p=>p<=20},
+    {label:"21–50 pax",fn:p=>p>20&&p<=50},
+    {label:"51–100 pax",fn:p=>p>50&&p<=100},
+    {label:"100+ pax",fn:p=>p>100},
+  ];
+  const paxSizes=mb.map(b=>totalPax(b)).filter(p=>p>0);
+  const maxPaxBand=Math.max(...paxBands.map(b=>paxSizes.filter(b.fn).length),1);
+  const avgPax=paxSizes.length?Math.round(paxSizes.reduce((a,p)=>a+p,0)/paxSizes.length):0;
+  const paxCard=document.createElement("div");paxCard.className="analysis-card";
+  paxCard.innerHTML=`<h3>Group Size Distribution</h3>
+    <div class="rate-grid" style="margin-bottom:10px">
+      <div class="rate-cell"><div class="rv">${avgPax||"—"}</div><div class="rl">Avg Pax</div></div>
+      <div class="rate-cell"><div class="rv">${paxSizes.length?Math.min(...paxSizes):"—"}</div><div class="rl">Min</div></div>
+      <div class="rate-cell"><div class="rv">${paxSizes.length?Math.max(...paxSizes):"—"}</div><div class="rl">Max</div></div>
+    </div>
+    ${paxBands.map(b=>{
+      const cnt=paxSizes.filter(b.fn).length;
+      return `<div class="band-row"><div class="band-label">${b.label}</div>${mkBar(cnt,maxPaxBand,"#7b1fa280")}<div class="band-count">${cnt}</div></div>`;
+    }).join("")}`;
+  wrap.appendChild(paxCard);
+
+  // ── 6. LUNCH VS DINNER ──
+  const mealCount={};
+  mb.forEach(b=>{const t=b.time||"Unknown";mealCount[t]=(mealCount[t]||0)+1});
+  const mealEntries=Object.entries(mealCount).sort((a,b)=>b[1]-a[1]);
+  const maxMeal=mealEntries[0]?.[1]||1;
+  const mealColors={"Lunch":"#e65100","Dinner":"#1a237e","Breakfast":"#2e7d32"};
+  const mealCard=document.createElement("div");mealCard.className="analysis-card";
+  mealCard.innerHTML=`<h3>Meal Time Split</h3>
+    ${mealEntries.map(([t,cnt])=>{
+      const pct=Math.round(cnt/mb.length*100);
+      const col=mealColors[t]||"#888";
+      return `<div class="menu-row">
+        <div class="menu-label">${esc(t)}</div>
+        ${mkBar(cnt,maxMeal,col+"80")}
+        <div class="menu-count">${cnt}</div>
+        <div class="menu-rev">${pct}%</div>
+      </div>`;
+    }).join("")}
+    ${!mealEntries.length?`<div style="font-size:12px;color:#bbb">No data</div>`:""}`;
+  wrap.appendChild(mealCard);
+
   el.appendChild(wrap);
 }
-function formatRate(r){return r>=1000000?(r/1000000).toFixed(1)+"M":(r/1000).toFixed(0)+"k"}
 
 function renderLegend(){
   document.getElementById("legend").innerHTML=VENUES.map(v=>
