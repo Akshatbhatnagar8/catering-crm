@@ -240,7 +240,7 @@ function renderSummary(){
     <div class="stat"><div class="val" style="color:#1565c0">IDR ${newRev.toFixed(1)}mn</div><div class="lbl">New</div></div>
     <div class="stat"><div class="val">IDR ${total.toFixed(1)}mn</div><div class="lbl">Total Pipeline</div></div>`;
 }
-let showAnalysis=true;
+let showAnalysis=false;
 function lastMonthBookings(){
   const d=new Date(cur);d.setMonth(d.getMonth()-1);
   const y=d.getFullYear(),m=pad(d.getMonth()+1);
