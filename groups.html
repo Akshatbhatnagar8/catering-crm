@@ -335,7 +335,7 @@ function renderAnalysis(){
     agentRev[a]=(agentRev[a]||0)+bookingRevenue(b);
     agentCnt[a]=(agentCnt[a]||0)+1;
   });
-  const agentEntries=Object.entries(agentRev).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const agentEntries=Object.entries(agentRev).sort((a,b)=>b[1]-a[1]);
   const maxAgentRev=agentEntries[0]?.[1]||1;
   const agentRevCard=document.createElement("div");agentRevCard.className="analysis-card";
   agentRevCard.innerHTML=`<h3>Revenue by Agent</h3>
@@ -357,7 +357,7 @@ function renderAnalysis(){
   });
   const agentRateEntries=Object.entries(agentRates)
     .map(([a,rs])=>([a,Math.round(rs.reduce((x,r)=>x+r,0)/rs.length)]))
-    .sort((a,b)=>b[1]-a[1]).slice(0,7);
+    .sort((a,b)=>b[1]-a[1]);
   const maxAgentRate=agentRateEntries[0]?.[1]||1;
   const agentRateCard=document.createElement("div");agentRateCard.className="analysis-card";
   agentRateCard.innerHTML=`<h3>Avg Rate by Agent (IDR)</h3>
