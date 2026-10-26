@@ -27,6 +27,28 @@ button.icon{background:transparent;border:1px solid var(--border);color:var(--in
 .stat .val{font-size:22px;font-weight:700;color:var(--accent)}
 .stat .lbl{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
 
+/* ANALYSIS */
+.analysis{padding:0 20px 4px;display:flex;gap:12px;flex-wrap:wrap}
+.analysis-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;flex:1;min-width:240px}
+.analysis-card h3{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin:0 0 12px}
+.analysis-toggle{display:flex;align-items:center;gap:6px;padding:4px 20px 10px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;width:fit-content}
+.analysis-toggle:hover{color:var(--ink)}
+.menu-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.menu-row .menu-label{font-size:12px;color:var(--ink);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-row .bar-wrap{flex:1;background:#f0ede8;border-radius:4px;height:8px;overflow:hidden}
+.menu-row .bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .3s}
+.menu-row .menu-count{font-size:11px;color:#888;width:28px;text-align:right;flex-shrink:0}
+.menu-row .menu-rev{font-size:10px;color:#aaa;width:60px;text-align:right;flex-shrink:0}
+.rate-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.rate-cell{text-align:center;background:#f6f5f1;border-radius:8px;padding:7px 4px}
+.rate-cell .rv{font-size:14px;font-weight:700;color:var(--ink)}
+.rate-cell .rl{font-size:10px;color:#aaa;margin-top:2px}
+.band-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.band-row .band-label{font-size:11px;color:#666;width:100px;flex-shrink:0}
+.band-row .bar-wrap{flex:1;background:#f0ede8;border-radius:4px;height:7px;overflow:hidden}
+.band-row .bar-fill{height:100%;border-radius:4px;background:#b8541a80}
+.band-row .band-count{font-size:11px;color:#888;width:20px;text-align:right}
+
 /* VENUE LEGEND */
 .legend{display:flex;gap:8px;padding:0 20px 12px;flex-wrap:wrap}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#555}
@@ -106,6 +128,7 @@ input,select,textarea{width:100%;padding:8px;border:1px solid var(--border);bord
 </header>
 
 <div class="summary-bar" id="summaryBar"></div>
+<div id="analysisSection"></div>
 <div class="legend" id="legend"></div>
 <div class="controls">
   <button class="icon" id="prevBtn">‹</button>
@@ -186,7 +209,7 @@ async function upsert(b){await sb.from("groups").upsert({id:b.id,data:b})}
 async function del(id){bookings=bookings.filter(x=>x.id!==id);await sb.from("groups").delete().eq("id",id);render()}
 
 function render(){
-  renderSummary();renderLegend();
+  renderSummary();renderAnalysis();renderLegend();
   document.getElementById("monthLabel").textContent=cur.toLocaleDateString("en-GB",{month:"long",year:"numeric"});
   const main=document.getElementById("main");
   main.innerHTML="";
@@ -217,6 +240,79 @@ function renderSummary(){
     <div class="stat"><div class="val" style="color:#1565c0">IDR ${newRev.toFixed(1)}mn</div><div class="lbl">New</div></div>
     <div class="stat"><div class="val">IDR ${total.toFixed(1)}mn</div><div class="lbl">Total Pipeline</div></div>`;
 }
+let showAnalysis=true;
+function renderAnalysis(){
+  const mb=monthBookings().filter(b=>b.status!=="Cancelled");
+  const el=document.getElementById("analysisSection");
+
+  const tog=document.createElement("div");tog.className="analysis-toggle";
+  tog.innerHTML=`${showAnalysis?"▲ Hide":"▼ Show"} Pricing & Menu Analysis`;
+  tog.onclick=()=>{showAnalysis=!showAnalysis;renderAnalysis()};
+
+  el.innerHTML="";
+  el.appendChild(tog);
+  if(!showAnalysis)return;
+
+  const wrap=document.createElement("div");wrap.className="analysis";
+
+  // ── PRICING PER PAX ──
+  const rated=mb.filter(b=>parseFloat(b.rate)>0);
+  const rates=rated.map(b=>parseFloat(b.rate));
+  const avg=rates.length?Math.round(rates.reduce((a,r)=>a+r,0)/rates.length):0;
+  const minR=rates.length?Math.min(...rates):0;
+  const maxR=rates.length?Math.max(...rates):0;
+  const bands=[
+    {label:"< 200k",fn:r=>r<200000},
+    {label:"200–350k",fn:r=>r>=200000&&r<350000},
+    {label:"350–500k",fn:r=>r>=350000&&r<500000},
+    {label:"500k +",fn:r=>r>=500000},
+  ];
+  const maxBand=Math.max(...bands.map(b=>rates.filter(b.fn).length),1);
+
+  const priceCard=document.createElement("div");priceCard.className="analysis-card";
+  priceCard.innerHTML=`<h3>Pricing per Pax (IDR)</h3>
+    <div class="rate-grid">
+      <div class="rate-cell"><div class="rv">${avg?formatRate(avg):"—"}</div><div class="rl">Avg</div></div>
+      <div class="rate-cell"><div class="rv">${minR?formatRate(minR):"—"}</div><div class="rl">Min</div></div>
+      <div class="rate-cell"><div class="rv">${maxR?formatRate(maxR):"—"}</div><div class="rl">Max</div></div>
+    </div>
+    ${bands.map(b=>{
+      const cnt=rates.filter(b.fn).length;
+      return `<div class="band-row">
+        <div class="band-label">${b.label}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(cnt/maxBand*100)}%"></div></div>
+        <div class="band-count">${cnt}</div>
+      </div>`;
+    }).join("")}
+    <div style="font-size:10px;color:#bbb;margin-top:8px">${rated.length} of ${mb.length} bookings have a rate set</div>`;
+  wrap.appendChild(priceCard);
+
+  // ── MENU BREAKDOWN ──
+  const menuCount={};const menuRev={};
+  mb.forEach(b=>{
+    const m=b.description||"(none)";
+    menuCount[m]=(menuCount[m]||0)+1;
+    menuRev[m]=(menuRev[m]||0)+bookingRevenue(b);
+  });
+  const menuEntries=Object.entries(menuCount).sort((a,b)=>b[1]-a[1]);
+  const maxMenu=menuEntries[0]?.[1]||1;
+
+  const menuCard=document.createElement("div");menuCard.className="analysis-card";
+  menuCard.innerHTML=`<h3>Menu Selection</h3>
+    ${menuEntries.map(([m,cnt])=>`
+      <div class="menu-row">
+        <div class="menu-label" title="${esc(m)}">${esc(m)}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(cnt/maxMenu*100)}%"></div></div>
+        <div class="menu-count">${cnt}</div>
+        <div class="menu-rev">${menuRev[m]>0?`IDR ${menuRev[m].toFixed(1)}mn`:""}</div>
+      </div>`).join("")}
+    ${!menuEntries.length?`<div style="font-size:12px;color:#bbb">No bookings this month</div>`:""}`;
+  wrap.appendChild(menuCard);
+
+  el.appendChild(wrap);
+}
+function formatRate(r){return r>=1000000?(r/1000000).toFixed(1)+"M":(r/1000).toFixed(0)+"k"}
+
 function renderLegend(){
   document.getElementById("legend").innerHTML=VENUES.map(v=>
     `<div class="legend-item"><div class="dot" style="background:${v.color}"></div>${v.name}</div>`
